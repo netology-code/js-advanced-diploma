@@ -200,6 +200,10 @@ export default class GamePlay {
     this.cells[index].title = message;
   }
 
+  hideCellTooltip(index) {
+    this.cells[index].title = '';
+  }
+  
   showDamage(index, damage) {
     return new Promise((resolve) => {
       const cell = this.cells[index];
