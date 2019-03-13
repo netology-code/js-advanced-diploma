@@ -215,7 +215,7 @@ someMethodName() { // <- что это за метод и где это нужн
    this.gameplay.addCellEnterListener(this.onCellEnter);
 }
 
-onCellEnter() {
+onCellEnter(cellIndex) {
     // some logic here
 }
 ```
@@ -257,7 +257,7 @@ someMethodName() { // <- что это за метод и где это нужн
    this.gameplay.addCellClickListener(this.onCellClick);
 }
 
-onCellClick() {
+onCellClick(cellIndex) {
     // some logic here
 }
 ```
