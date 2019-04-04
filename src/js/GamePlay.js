@@ -212,10 +212,10 @@ export default class GamePlay {
       damageEl.classList.add('damage');
       cell.appendChild(damageEl);
 
-      setTimeout(() => {
+      damageEl.addEventListener('end', () => {
         cell.removeChild(damageEl);
         resolve();
-      }, 500);
+      });
     });
   }
 
