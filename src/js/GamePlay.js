@@ -212,7 +212,7 @@ export default class GamePlay {
       damageEl.classList.add('damage');
       cell.appendChild(damageEl);
 
-      damageEl.addEventListener('end', () => {
+      damageEl.addEventListener('transitionend', () => {
         cell.removeChild(damageEl);
         resolve();
       });
