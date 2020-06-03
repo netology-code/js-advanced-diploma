@@ -100,8 +100,8 @@ UPD: 14.04.2019 у игрока могут быть только swordsman, bowm
 * Bowman - 25/25
 * Swordsman - 40/10
 * Magician - 10/40
-* Undead - 25/25
-* Vampire - 40/10
+* Vampire - 25/25
+* Undead - 40/10
 * Daemon - 10/40
 
 #### Level Up
