@@ -7,12 +7,7 @@ export default class GameController {
   init() {
     this.gamePlay.drawUi('prairie');
 
-    for (const hero of this.playerTeam.characters) {
-      this.players.push(hero);
-    }
-    for (const enemy of this.computerTeam.characters) {
-      this.players.push(enemy);
-    }
+   
 
     this.gamePlay.redrawPositions(this.players);
 
