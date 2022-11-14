@@ -36,8 +36,6 @@
   }
 
   * [Symbol.iterator]() {
-    for (const person of this.members) {
-      yield person;
-    }
-  }
+  return this.members[Symbol.iterator]();
+}
 }
