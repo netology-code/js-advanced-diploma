@@ -1,0 +1,45 @@
+{
+  "name": "js-advanced-diploma",
+  "version": "1.0.0",
+  "description": "Вы неплохо овладели не только продвинутыми возможностями JS, но и инфраструктурными инструментами. Вам поручили первый проект: разработать небольшую пошаговую игру.",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --mode production",
+    "lint": "eslint .",
+    "coverage": "jest --coverage",
+    "test": "jest",
+    "start": "webpack serve --mode development"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pvova21/js-advanced-diploma.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pvova21/js-advanced-diploma/issues"
+  },
+  "homepage": "https://github.com/pvova21/js-advanced-diploma#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.19.3",
+    "@babel/core": "^7.20.2",
+    "@babel/preset-env": "^7.20.2",
+    "babel-jest": "^29.3.1",
+    "babel-loader": "^9.1.0",
+    "css-loader": "^6.7.2",
+    "eslint": "^8.27.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "html-loader": "^4.2.0",
+    "html-webpack-plugin": "^5.5.0",
+    "jest": "^29.3.1",
+    "mini-css-extract-plugin": "^2.6.1",
+    "url-loader": "^4.1.1",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^4.10.0",
+    "webpack-dev-server": "^4.11.1"
+  },
+  "dependencies": {
+    "core-js": "^3.26.1"
+  }
+}

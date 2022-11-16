@@ -7,6 +7,8 @@ export default class GameController {
   init() {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
+    this.events();
+    this.nextLevel();
   }
 
   onCellClick(index) {
