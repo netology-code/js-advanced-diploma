@@ -1,24 +1,11 @@
-/**
- * Класс, представляющий персонажей команды
- *
- * @todo Самостоятельно продумайте хранение персонажей в классе
- * Например
- * @example
- * ```js
- * const characters = [new Swordsman(2), new Bowman(1)]
- * const team = new Team(characters);
- *
- * team.characters // [swordsman, bowman]
- * ```
- * */
- export default class Team {
+export default class Team {
   constructor() {
     this.members = new Set();
   }
 
   add(character) {
     if (this.members.has(character)) {
-      throw new Error('Такой персонаж уже eсть в команде');
+      throw new Error('Ошибка!Такой персонаж уже eсть в команде!');
     }
     this.members.add(character);
   }
@@ -35,7 +22,7 @@
     return [...this.members];
   }
 
-  * [Symbol.iterator]() {
-  return this.members[Symbol.iterator]();
-}
+  [Symbol.iterator]() {
+    return this.members[Symbol.iterator]();
+  }
 }

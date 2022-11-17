@@ -10,7 +10,7 @@ import Magician from './Characters/Magician';
 import PositionedCharacter from './PositionedCharacter';
 import GameState from './GameState';
 import GamePlay from './GamePlay';
-//import cursors from './cursors';
+import cursors from './cursors';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -31,27 +31,43 @@ export default class GameController {
     this.addsTheTeamToPosition(this.botTeam, this.getBotStartPositions());
     this.gamePlay.redrawPositions(this.gameState.allPositions);
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
+    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+    this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
+    
 
-    GamePlay.showMessage(`Уровень ${this.gameState.level}`);
+   // GamePlay.showMessage(`Уровень ${this.gameState.level}`);
   }
 
 
-   onCellClick(index) {
-  //   // TODO: react to click
+  onCellClick(index) {
+    // TODO: react to click
 
-     if (this.gameState.level === 5 || this.userTeam.members.size === 0) {
+    if (this.gameState.level === 5 || this.userTeam.members.size === 0) {
       return;
-     }
-
-  
-   }
+    }
+   
+    if (this.getChar(index) && this.isUserChar(index)) {
+      this.gamePlay.cells.forEach((elem) => elem.classList.remove('selected-green'));
+      this.gamePlay.cells.forEach((elem) => elem.classList.remove('selected-yellow'));
+      this.gamePlay.selectCell(index);
+      this.gameState.selected = index;
+    }
+  }
 
    onCellEnter(index) {
-  //   // TODO: react to mouse enter
+    // TODO: react to mouse enter
 
-  
-   }
-
+    if (this.getChar(index) && this.isUserChar(index)) {
+      this.gamePlay.setCursor(cursors.pointer);
+    }
+    
+    if (this.getChar(index)) {
+      const char = this.getChar(index).character;
+      const message = `\u{1F396}${char.level}\u{2694}${char.attack}\u{1F6E1}${char.defence}\u{2764}${char.health}`;
+      this.gamePlay.showCellTooltip(message, index);
+    }
+    
+  }
   onCellLeave(index) {
   }
 
@@ -80,11 +96,7 @@ export default class GameController {
     return botPosition;
   }
 
-  /**
- * Возвращает рандомную позицию
- * @param {Array} positions массив возможных позиций при старте игры
- * @returns рандомное число
- */
+  
   getRandom(positions) {
     this.positions = positions;
     return this.positions[Math.floor(Math.random() * this.positions.length)];
@@ -105,11 +117,15 @@ export default class GameController {
   }
 
  
-  /**
-   * Проверяет по индексу бота ли персонаж
-   * @param {number} idx индекс бота
-   * @returns boolean
-   */
+  
+   isUserChar(idx) {
+    if (this.getChar(idx)) {
+      const char = this.getChar(idx).character;
+      return this.userCharacters.some((elem) => char instanceof elem);
+    }
+    return false;
+  }
+
   isBotChar(idx) {
     if (this.getChar(idx)) {
       const bot = this.getChar(idx).character;
