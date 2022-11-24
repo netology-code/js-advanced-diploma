@@ -33,9 +33,8 @@ export default class GameController {
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
     this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
     this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
-    
-
-   // GamePlay.showMessage(`Уровень ${this.gameState.level}`);
+   
+   //GamePlay.showMessage(`Уровень ${this.gameState.level}`);
   }
 
 
@@ -45,7 +44,24 @@ export default class GameController {
     if (this.gameState.level === 5 || this.userTeam.members.size === 0) {
       return;
     }
-   
+    if (this.gameState.selected !== null && this.getChar(index) && this.isBotChar(index)) {
+      if (this.isAttack(index)) {
+        this.getAttack(index, this.gameState.selected);
+      }
+    }
+    if (this.gameState.selected !== null && this.isMoving(index) && !this.getChar(index)) {
+      if (this.gameState.isUsersTurn) {
+        this.getUsersTurn(index);
+      }
+    }
+    if (this.gameState.selected !== null && !this.isMoving(index) && !this.isAttack(index)) {
+      if (this.gameState.isUsersTurn && !this.getChar(index)) {
+        GamePlay.showError('Недопустимый ход!');
+      }
+    }
+    if (this.getChar(index) && this.isBotChar(index) && !this.isAttack(index)) {
+      GamePlay.showError('Это не ваш персонаж!');
+    }
     if (this.getChar(index) && this.isUserChar(index)) {
       this.gamePlay.cells.forEach((elem) => elem.classList.remove('selected-green'));
       this.gamePlay.cells.forEach((elem) => elem.classList.remove('selected-yellow'));
@@ -54,27 +70,108 @@ export default class GameController {
     }
   }
 
-   onCellEnter(index) {
+   
+
+  onCellEnter(index) {
     // TODO: react to mouse enter
 
     if (this.getChar(index) && this.isUserChar(index)) {
       this.gamePlay.setCursor(cursors.pointer);
     }
-    
+    if (this.gameState.selected !== null && !this.getChar(index) && this.isMoving(index)) {
+      this.gamePlay.setCursor(cursors.pointer);
+      this.gamePlay.selectCell(index, 'green');
+    }
     if (this.getChar(index)) {
       const char = this.getChar(index).character;
       const message = `\u{1F396}${char.level}\u{2694}${char.attack}\u{1F6E1}${char.defence}\u{2764}${char.health}`;
       this.gamePlay.showCellTooltip(message, index);
     }
-    
+    if (this.gameState.selected !== null && this.getChar(index) && !this.isUserChar(index)) {
+      if (this.isAttack(index)) {
+        this.gamePlay.setCursor(cursors.crosshair);
+        this.gamePlay.selectCell(index, 'red');
+      }
+    }
+    if (this.gameState.selected !== null && !this.isAttack(index) && !this.isMoving(index)) {
+      if (!this.isUserChar(index)) {
+        this.gamePlay.setCursor(cursors.notallowed);
+      }
+    }
+  
   }
   onCellLeave(index) {
+    // TODO: react to mouse leave
+    this.gamePlay.cells.forEach((elem) => elem.classList.remove('selected-red'));
+    this.gamePlay.cells.forEach((elem) => elem.classList.remove('selected-green'));
+    this.gamePlay.hideCellTooltip(index);
+    this.gamePlay.setCursor(cursors.auto);
+  }
+
+
+  getAttack(idx) {
+    if (this.gameState.isUsersTurn) {
+      const attacker = this.getChar(this.gameState.selected).character;
+      const target = this.getChar(idx).character;
+      const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
+      if (!attacker || !target) {
+        return;
+      }
+      this.gamePlay.showDamage(idx, damage).then(() => {
+        target.health -= damage;
+        if (target.health <= 0) {
+          this.getDeletion(idx);
+          this.botTeam.delete(target);
+        }
+      }).then(() => {
+        this.gamePlay.redrawPositions(this.gameState.allPositions);
+      }).then(() => {
+        
+      });
+      this.gameState.isUsersTurn = false;
+    }
+  }
+
+ getUsersTurn(idx) {
+  this.getSelectedChar().position = idx;
+  this.gamePlay.deselectCell(this.gameState.selected);
+  this.gamePlay.redrawPositions(this.gameState.allPositions);
+  this.gameState.selected = idx;
+ // this.gameState.isUsersTurn = false; //ход юзера false 
+ //this.getBotsResponse();//далее ход компика вывести функцию хода компика
+}
+
+  
+  //  Проверяет валидность диапазона перемещения
+  
+   isMoving(idx) {
+    if (this.getSelectedChar()) {
+      const moving = this.getSelectedChar().character.distance;
+      const arr = this.calcRange(this.gameState.selected, moving);
+      return arr.includes(idx);
+    }
+    return false;
   }
 
   
-  /**
-   * @returns {Array} Возвращает массив возможных позиций игрока при старте игры
-   */
+  // валидность диапазона атаки
+   
+  isAttack(idx) {
+    if (this.getSelectedChar()) {
+      const stroke = this.getSelectedChar().character.attackRange;
+      const arr = this.calcRange(this.gameState.selected, stroke);
+      return arr.includes(idx);
+    }
+    return false;
+  }
+  
+  getSelectedChar() {
+    return this.gameState.allPositions.find((elem) => elem.position === this.gameState.selected);
+  }
+
+  
+    // Возвращает массив возможных позиций игрока при старте игры
+   
   getUserStartPositions() {
     const size = this.gamePlay.boardSize;
     this.userPosition = [];
@@ -84,9 +181,9 @@ export default class GameController {
     return this.userPosition;
   }
 
-  /**
-   * @returns  массив возможных позиций бота при старте игры
-   */
+  
+//  массив возможных позиций бота при старте игры
+   
   getBotStartPositions() {
     const size = this.gamePlay.boardSize;
     const botPosition = [];
@@ -102,11 +199,10 @@ export default class GameController {
     return this.positions[Math.floor(Math.random() * this.positions.length)];
   }
 
-  /**
-   * Добавляет команду в gameState.allPositions
-   * @param {Object} team команда (игрока или бота)
-   * @param {Array} positions массив возможных позиций при старте игры
-   */
+  
+  //  Добавляет команду в gameState.allPositions
+   
+  
   addsTheTeamToPosition(team, positions) {
     const copyPositions = [...positions];
     for (const item of team) {
@@ -134,10 +230,9 @@ export default class GameController {
     return false;
   }
 
-  /**
-   * @param {number} idx индекс персонажа
-   * @returns Возвращает персонажа по индексу из gameState.allPositions
-   */
+
+  //  Возвращает персонажа по индексу из gameState.allPositions
+ 
   getChar(idx) {
     return this.gameState.allPositions.find((elem) => elem.position === idx);
   }
