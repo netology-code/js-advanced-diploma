@@ -8,7 +8,7 @@
  * возвращает новый экземпляр класса персонажа
  *
  */
- export function* characterGenerator(allowedTypes, maxLevel) {
+export function* characterGenerator(allowedTypes, maxLevel) {
   // TODO: write logic here
   while (true) {
     const tipe = Math.floor(Math.random() * allowedTypes.length);

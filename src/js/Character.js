@@ -12,7 +12,7 @@
  * undead
  * vampire
  */
- export default class Character {
+export default class Character {
   constructor(level, type = 'generic') {
     this.level = level;
     this.attack = 0;

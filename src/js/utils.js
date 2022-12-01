@@ -64,3 +64,9 @@ export function calcHealthLevel(health) {
 
   return 'high';
 }
+
+export function tooltipMessage({
+  level, attack, defence, health,
+}) {
+  return `🎖${level} ⚔${attack} 🛡${defence} ❤${health}`;
+}
