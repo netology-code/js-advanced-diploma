@@ -402,19 +402,19 @@ export default class GameController {
 
   onLoadGameClick() {
     GamePlay.showMessage('Игра загружена');
-    const load = this.stateService.load();
-    if (!load) {
+    const loadedState = this.stateService.loadedState();
+    if (!loadedState) {
       GamePlay.showError('Ошибка загрузки');
     }
-    this.gameState.isUsersTurn = load.isUsersTurn;
-    this.gameState.level = load.level;
+    this.gameState.isUsersTurn = loadedState.isUsersTurn;
+    this.gameState.level = loadedState.level;
     this.gameState.allPositions = [];
-    this.gameState.points = load.points;
-    this.gameState.statistics = load.statistics;
-    this.gameState.selected = load.selected;
+    this.gameState.points = loadedState.points;
+    this.gameState.statistics = loadedState.statistics;
+    this.gameState.selected = loadedState.selected;
     this.userTeam = new Team();
     this.botTeam = new Team();
-    load.allPositions.forEach((elem) => {
+    loadedState.allPositions.forEach((elem) => {
       let char;
       switch (elem.character.type) {
         case 'swordsman':
