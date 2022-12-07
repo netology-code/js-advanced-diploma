@@ -78,51 +78,51 @@ body {
 }
 
 .board.prairie {
-  --map-tile-top-left-url: url('../img/prairie/map-tile-top-left.png');
-  --map-tile-top-url: url('../img/prairie/map-tile-top.png');
-  --map-tile-top-right-url: url('../img/prairie/map-tile-top-right.png');
-  --map-tile-bottom-left-url: url('../img/prairie/map-tile-bottom-left.png');
-  --map-tile-bottom-url: url('../img/prairie/map-tile-bottom.png');
-  --map-tile-bottom-right-url: url('../img/prairie/map-tile-bottom-right.png');
-  --map-tile-left-url: url('../img/prairie/map-tile-left.png');
-  --map-tile-right-url: url('../img/prairie/map-tile-right.png');
-  --map-tile-center-url: url('../img/prairie/map-tile-center.png');
+  --map-tile-top-left-url: url(46d63299c3420c030b4e.png);
+  --map-tile-top-url: url(946aeb948db6313f1d85.png);
+  --map-tile-top-right-url: url(0ac7f8258ec7166dc957.png);
+  --map-tile-bottom-left-url: url(26b5f224d8750119922d.png);
+  --map-tile-bottom-url: url(07d5e8127645225478b6.png);
+  --map-tile-bottom-right-url: url(2429af6d3a5796e3c34b.png);
+  --map-tile-left-url: url(546abb060a0837550fd1.png);
+  --map-tile-right-url: url(6a84ae91f5d985ddc9ee.png);
+  --map-tile-center-url: url(0089a610e6611f679b50.png);
 }
 
 .board.desert {
-  --map-tile-top-left-url: url('../img/desert/map-tile-top-left.png');
-  --map-tile-top-url: url('../img/desert/map-tile-top.png');
-  --map-tile-top-right-url: url('../img/desert/map-tile-top-right.png');
-  --map-tile-bottom-left-url: url('../img/desert/map-tile-bottom-left.png');
-  --map-tile-bottom-url: url('../img/desert/map-tile-bottom.png');
-  --map-tile-bottom-right-url: url('../img/desert/map-tile-bottom-right.png');
-  --map-tile-left-url: url('../img/desert/map-tile-left.png');
-  --map-tile-right-url: url('../img/desert/map-tile-right.png');
-  --map-tile-center-url: url('../img/desert/map-tile-center.png');
+  --map-tile-top-left-url: url(258d884122fabfc2f312.png);
+  --map-tile-top-url: url(dc3f97e7bbcd5ea1ded9.png);
+  --map-tile-top-right-url: url(2f1e1970c2c20cf3a8d5.png);
+  --map-tile-bottom-left-url: url(13edb269e39172ddd74f.png);
+  --map-tile-bottom-url: url(f1703771380a9959d979.png);
+  --map-tile-bottom-right-url: url(5cf9c17d6a1ea7106a6c.png);
+  --map-tile-left-url: url(eb1f6e4f87b977012684.png);
+  --map-tile-right-url: url(2c19971f327b288278bb.png);
+  --map-tile-center-url: url(51e2a5de56bd631452fe.png);
 }
 
 .board.arctic {
-  --map-tile-top-left-url: url('../img/arctic/map-tile-top-left.png');
-  --map-tile-top-url: url('../img/arctic/map-tile-top.png');
-  --map-tile-top-right-url: url('../img/arctic/map-tile-top-right.png');
-  --map-tile-bottom-left-url: url('../img/arctic/map-tile-bottom-left.png');
-  --map-tile-bottom-url: url('../img/arctic/map-tile-bottom.png');
-  --map-tile-bottom-right-url: url('../img/arctic/map-tile-bottom-right.png');
-  --map-tile-left-url: url('../img/arctic/map-tile-left.png');
-  --map-tile-right-url: url('../img/arctic/map-tile-right.png');
-  --map-tile-center-url: url('../img/arctic/map-tile-center.png');
+  --map-tile-top-left-url: url(eab6a2cc5e89a4dd8e3f.png);
+  --map-tile-top-url: url(e0aa3daf6d08c62c96d9.png);
+  --map-tile-top-right-url: url(d31d84c693f649766aee.png);
+  --map-tile-bottom-left-url: url(b27323cf850ed820855c.png);
+  --map-tile-bottom-url: url(63aae58e4690953a3857.png);
+  --map-tile-bottom-right-url: url(ac9d74f57639792774bc.png);
+  --map-tile-left-url: url(3d9503e0a850fda86f82.png);
+  --map-tile-right-url: url(22e7c5ede3f747cbe27a.png);
+  --map-tile-center-url: url(246277b8ca590816b3e8.png);
 }
 
 .board.mountain {
-  --map-tile-top-left-url: url('../img/mountain/map-tile-top-left.png');
-  --map-tile-top-url: url('../img/mountain/map-tile-top.png');
-  --map-tile-top-right-url: url('../img/mountain/map-tile-top-right.png');
-  --map-tile-bottom-left-url: url('../img/mountain/map-tile-bottom-left.png');
-  --map-tile-bottom-url: url('../img/mountain/map-tile-bottom.png');
-  --map-tile-bottom-right-url: url('../img/mountain/map-tile-bottom-right.png');
-  --map-tile-left-url: url('../img/mountain/map-tile-left.png');
-  --map-tile-right-url: url('../img/mountain/map-tile-right.png');
-  --map-tile-center-url: url('../img/mountain/map-tile-center.png');
+  --map-tile-top-left-url: url(ef1b0ea8c4e545d9aadc.png);
+  --map-tile-top-url: url(8b928c3eb136543e573a.png);
+  --map-tile-top-right-url: url(a1d2321024649b9d8f5f.png);
+  --map-tile-bottom-left-url: url(1d70f1dab2dd418c3612.png);
+  --map-tile-bottom-url: url(f462d2ed6eedca1e4fd9.png);
+  --map-tile-bottom-right-url: url(6bacb8e25ed9ecf726bf.png);
+  --map-tile-left-url: url(c75f062dddba6e98fdc6.png);
+  --map-tile-right-url: url(26fdc25019c24e87f11a.png);
+  --map-tile-center-url: url(6f6f7c09bde970b2e41b.png);
 }
 
 .map-tile {
@@ -174,35 +174,35 @@ body {
 }
 
 .character.generic {
-  background: url('../img/characters/generic.png');
+  background: url(0a77fc47d727eab6fd39.png);
 }
 
 .character.bowman {
-  background: url('../img/characters/bowman.png');
+  background: url(cec542854b228e61547a.png);
 }
 
 .character.daemon {
-  background: url('../img/characters/daemon.png');
+  background: url(cf170a9fea1051b7424a.png);
 }
 
 .character.magician {
-  background: url('../img/characters/magician.png');
+  background: url(c0fa2b75539f94144dc4.png);
 }
 
 .character.swordsman {
-  background: url('../img/characters/swordsman.png');
+  background: url(2007ec00c1d9f997e704.png);
 }
 
 .character.undead {
-  background: url('../img/characters/undead.png');
+  background: url(f5c75398bcb5931f9f3c.png);
 }
 
 .character.vampire {
-  background: url('../img/characters/vampire.png');
+  background: url(bf0ed0dca1d1e6091d42.png);
 }
 
 .character.zombie {
-  background: url('../img/characters/zombie.png');
+  background: url(296dfeac15e2377fc1dc.png);
 }
 
 .health-level {
@@ -252,3 +252,4 @@ body {
     font-size: 1.5rem;
   }
 }
+
