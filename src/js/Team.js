@@ -19,7 +19,7 @@ export default class Team {
   constructor(characters) {
     this._characters = new Map();
     if (characters) {
-      characters.forEach(character => {
+      characters.forEach((character) => {
         this._characters.set(randomId(5), character);
       });
     }
@@ -31,14 +31,14 @@ export default class Team {
 
   set characters(arr) {
     this._characters.clear();
-    [...arr].forEach(character => {
-      this._characters.set(randomId(5), character)
-    })
+    [...arr].forEach((character) => {
+      this._characters.set(randomId(5), character);
+    });
   }
 
-  add(...character) {
-    character.forEach(character => {
-      this._characters.set(randomId(5), character)
-    })
+  add(...characters) {
+    characters.forEach((character) => {
+      this._characters.set(randomId(5), character);
+    });
   }
 }
