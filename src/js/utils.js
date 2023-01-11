@@ -25,16 +25,15 @@
 export function calcTileType(index, boardSize) {
   const cells = boardSize ** 2;
   const top = (index < boardSize) ? 'top' : null;
-  const bottom = (index >= cells - boardSize) ? 'bottom' : null
+  const bottom = (index >= cells - boardSize) ? 'bottom' : null;
   const left = (index % boardSize === 0) ? 'left' : null;
   const right = (index % boardSize === boardSize - 1) ? 'right' : null;
-  if ( (top || bottom) && (left || right) ) {
-    return `${ (top || bottom) }-${ (left || right) }`
-  } else if ( top || bottom || left || right ) {
+  if ((top || bottom) && (left || right)) {
+    return `${(top || bottom)}-${(left || right)}`;
+  } if (top || bottom || left || right) {
     return top || bottom || left || right;
-  } else {
-    return 'center';
   }
+  return 'center';
 }
 
 export function calcHealthLevel(health) {
