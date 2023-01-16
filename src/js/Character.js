@@ -26,4 +26,17 @@ export default class Character {
       throw new Error("new Character() is forbidden");
     }
   }
+
+  levelUp() {
+    this.level += 1;
+    this.attack = Math.max(
+      this.attack,
+      (this.attack * (80 + this.health)) / 100
+    );
+    this.defence = Math.max(
+      this.defence,
+      (this.defence * (80 + this.health)) / 100
+    );
+    this.health = Math.min(this.health + 80, 100);
+  }
 }

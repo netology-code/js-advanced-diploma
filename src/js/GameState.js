@@ -24,7 +24,7 @@ export default class GameState {
     this.enemyTypes = [Daemon, Undead, Vampire];
   }
 
-  nextMove() {
+  changeMove() {
     this.move = this.move === "player" ? "computer" : "player";
   }
 

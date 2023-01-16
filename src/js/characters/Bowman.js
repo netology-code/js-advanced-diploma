@@ -8,5 +8,11 @@ export default class Bowman extends Character {
     this.defence = 25;
     this.attackRange = 2;
     this.moveRange = 2;
+
+    if (level > 1) {
+      for (let i = 1; i < level; i += 1) {
+        this.levelUp();
+      }
+    }
   }
 }

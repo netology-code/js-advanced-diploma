@@ -4,8 +4,6 @@ import { generateTeam } from "./generators";
 import PositionedCharacter from "./PositionedCharacter";
 import GamePlay from "./GamePlay";
 import GameState from "./GameState";
-import AI from "./AI";
-import selectCharacter from "./selectCharacter";
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -22,41 +20,64 @@ export default class GameController {
     this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
 
     // TODO: load saved stated from stateService
-    if (this.stateService.load()) {
-      this.gameState = GameState.from(this.stateService.load());
-    } else {
+    this.newGame();
+    // if (this.stateService.load()) {
+    //   this.gameState = GameState.from(this.stateService.load());
+    //   this.gamePlay.redrawPositions(this.gameState.charactersPositions);
+    // } else {
+    //   this.newGame();
+    // }
+
+    // const playerTeam = generateTeam(this.gameState.playerTypes, 3, 4);
+    // this.positionTeam(playerTeam, [1, 2]);
+
+    // const enemyTeam = generateTeam(this.gameState.enemyTypes, 3, 4);
+    // this.positionTeam(enemyTeam, [7, 8]);
+
+    // this.gamePlay.redrawPositions(this.gameState.charactersPositions);
+  }
+
+  newGame(playerTeam) {
+    if (playerTeam === undefined) {
       this.gameState = new GameState();
+
+      const playerTeam = generateTeam(this.gameState.playerTypes, 3, 4);
+      this.positionTeam(playerTeam, [1, 2]);
+
+      const enemyTeam = generateTeam(this.gameState.enemyTypes, 3, 4);
+      this.positionTeam(enemyTeam, [7, 8]);
+    } else {
+      let maxLevel = 1;
+      playerTeam.forEach((el) => {
+        el.levelUp();
+        maxLevel = Math.max(maxLevel, el.level);
+      });
+      this.positionTeam(playerTeam, [1, 2]);
+
+      this.gameState.charactersPositions = [];
+
+      const enemyTeam = generateTeam(this.gameState.enemyTypes, maxLevel, 4);
+      this.positionTeam(enemyTeam, [7, 8]);
     }
 
-    const playerTeam = generateTeam(this.gameState.playerTypes, 3, 4);
-    this.positionTeam(playerTeam, [1, 2]);
-
-    const enemyTeam = generateTeam(this.gameState.enemyTypes, 3, 4);
-    this.positionTeam(enemyTeam, [7, 8]);
-
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
-
-    // const ai = new AI(this.gameState);
-    // ai.move();
   }
 
   onCellClick(index) {
     // TODO: react to click
     const character = this.getCharacter(index);
     if (character && this.isPlayer(character.character)) {
-      if (this.gameState.focusedCell !== undefined) {
-        this.gamePlay.deselectCell(this.gameState.focusedCell);
-      }
-
       this.gameState.focusedCell = index;
       this.gamePlay.selectCell(index);
-      this.gameState.selectedCharacter = selectCharacter.call(this, character);
+      this.gameState.selectedCharacter = this.focusCharacter(character);
     } else if (character && !this.isPlayer(character.character)) {
       if (
         this.gameState.selectedCharacter &&
         this.gameState.selectedCharacter.posibleAttacks.includes(index)
       ) {
-        this.attack(character);
+        this.attack(character).then(() => {
+          this.aiMove();
+        });
       } else {
         GamePlay.showError("Выберите персонажа Игрока");
       }
@@ -66,6 +87,7 @@ export default class GameController {
         this.gameState.selectedCharacter.posibleMoves.includes(index)
       ) {
         this.moveCharacter(this.gameState.selectedCharacter, index);
+        this.aiMove();
       }
     }
   }
@@ -138,6 +160,19 @@ export default class GameController {
     });
   }
 
+  resetSelect(cell) {
+    this.gamePlay.deselectCell(cell);
+    this.gameState.focusedCell = null;
+    this.gameState.selectedCharacter = null;
+  }
+
+  remove(character) {
+    const index = this.gameState.charactersPositions.findIndex(
+      (el) => el.character === character
+    );
+    this.gameState.charactersPositions.splice(index, 1);
+  }
+
   getRandomPosition(allowedCells) {
     let position;
     do {
@@ -151,6 +186,14 @@ export default class GameController {
       (char) => char.position === position
     );
     return character ? character : false;
+  }
+
+  getEnemyCharacter() {
+    const enemyTeam = this.gameState.charactersPositions.filter((el) =>
+      this.gameState.enemyTypes.some((type) => el.character instanceof type)
+    );
+    const aiCharacter = this.randomTarget(enemyTeam);
+    return aiCharacter;
   }
 
   isPlayer(character) {
@@ -176,14 +219,50 @@ export default class GameController {
     }
   }
 
+  moveEnd() {
+    this.gameState.charactersPositions
+      .filter((el) => el.character.health <= 0)
+      .forEach((el) => this.remove(el.character));
+
+    const playerTeam = this.gameState.charactersPositions.filter((el) =>
+      this.isPlayer(el.character)
+    );
+    const enemyTeam = this.getEnemyCharacter();
+
+    if (playerTeam.length === 0 || enemyTeam) {
+      return this.newGame;
+    }
+
+    this.gameState.selectedCharacter = null;
+    this.gamePlay.redrawPositions(this.gameState.charactersPositions);
+    this.gameState.changeMove();
+  }
+
   moveCharacter(character, index) {
     this.getCharacter(character.position).position = index;
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
 
-    this.gameState.selectedCharacter = null;
-    this.gamePlay.deselectCell(character.position);
-    this.gameState.nextMove();
-    console.log(this.gameState);
+    this.resetSelect(character.position);
+    this.moveEnd();
+  }
+
+  aiMove() {
+    const aiCharacter = this.getEnemyCharacter();
+    this.gameState.selectedCharacter = this.focusCharacter(aiCharacter);
+
+    if (this.gameState.selectedCharacter.posibleAttacks.length > 0) {
+      const target = this.randomTarget(
+        this.gameState.selectedCharacter.posibleAttacks
+      );
+      this.attack(this.getCharacter(target));
+    } else {
+      const target = this.randomTarget(
+        this.gameState.selectedCharacter.posibleMoves
+      );
+      this.moveCharacter(this.gameState.selectedCharacter, target);
+    }
+
+    this.moveEnd();
   }
 
   async attack(target) {
@@ -195,6 +274,84 @@ export default class GameController {
 
     target.character.health -= damage;
     await this.gamePlay.showDamage(target.position, damage);
+    this.resetSelect(this.gameState.selectedCharacter.position);
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
+  }
+
+  focusCharacter(pCharacter) {
+    let { character, position } = pCharacter;
+    const y = Math.floor(position / this.gamePlay.boardSize);
+    const x = position % this.gamePlay.boardSize;
+
+    const posibleAttacks = [];
+    const posibleMoves = [];
+
+    const start = (i, attibute) => {
+      return i - attibute >= 0 ? i - attibute : 0;
+    };
+    const end = (i, attibute) => {
+      return i + attibute < this.gamePlay.boardSize
+        ? i + attibute
+        : this.gamePlay.boardSize - 1;
+    };
+
+    for (
+      let i = start(y, character.attackRange);
+      i <= end(y, character.attackRange);
+      i += 1
+    ) {
+      for (
+        let n = start(x, character.attackRange);
+        n <= end(x, character.attackRange);
+        n += 1
+      ) {
+        const cell = i * this.gamePlay.boardSize + n;
+        if (this.getCharacter(cell) && cell !== position) {
+          if (!this.isSameTeam(character, this.getCharacter(cell).character)) {
+            posibleAttacks.push(cell);
+          }
+        }
+      }
+    }
+
+    for (
+      let yMove = start(y, character.moveRange);
+      yMove <= end(y, character.moveRange);
+      yMove += 1
+    ) {
+      for (
+        let xMove = start(x, character.moveRange);
+        xMove <= end(x, character.moveRange);
+        xMove += 1
+      ) {
+        const cell = yMove * this.gamePlay.boardSize + xMove;
+        if (cell !== position && !this.getCharacter(cell)) {
+          if (y - x === yMove - xMove) {
+            posibleMoves.push(cell);
+          } else if (y + x === yMove + xMove) {
+            posibleMoves.push(cell);
+          } else if (xMove === x) {
+            posibleMoves.push(cell);
+          } else if (yMove === y) {
+            posibleMoves.push(cell);
+          }
+        }
+      }
+    }
+
+    return {
+      character,
+      position,
+      positionXY: { x, y },
+      posibleMoves,
+      posibleAttacks,
+    };
+  }
+
+  randomTarget(arr) {
+    if (arr.length === 0) {
+      return false;
+    }
+    return arr[Math.floor(Math.random() * arr.length)];
   }
 }
