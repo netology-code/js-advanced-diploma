@@ -1,11 +1,9 @@
-import Character from "../Character";
+import CharMath from "./CharMath";
 
-export default class Daemon extends Character {
-  constructor(level) {
-    super(level);
+export default class Daemon extends CharMath {
+  constructor(level, attack = 10, defence = 10) {
+    super(level, attack, defence);
     this.type = "daemon";
-    this.attack = 10;
-    this.defence = 10;
     this.attackRange = 4;
     this.moveRange = 1;
   }

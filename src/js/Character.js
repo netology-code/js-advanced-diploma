@@ -14,7 +14,7 @@
  */
 export default class Character {
   constructor(level, type = "generic") {
-    this.level = level;
+    this.level = 1;
     this.attack = 0;
     this.defence = 0;
     this.health = 50;
@@ -25,5 +25,18 @@ export default class Character {
     if (new.target.name === "Character") {
       throw new Error("new Character() is forbidden");
     }
+  }
+
+  levelUp() {
+    this.level += 1;
+    this.attack = +Math.max(
+      this.attack,
+      (this.attack * (80 + this.health)) / 100
+    ).toFixed(0);
+    this.defence = +Math.max(
+      this.defence,
+      (this.defence * (80 + this.health)) / 100
+    ).toFixed(0);
+    this.health = +Math.min(this.health + 80, 100).toFixed(0);
   }
 }
