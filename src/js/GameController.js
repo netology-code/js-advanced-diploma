@@ -5,6 +5,7 @@ import PositionedCharacter from "./PositionedCharacter";
 import GamePlay from "./GamePlay";
 import GameState from "./GameState";
 import Team from "./Team";
+import Bowman from "./characters/Bowman";
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -13,6 +14,17 @@ export default class GameController {
   }
 
   init() {
+    const bowm = {attack: 25,
+      attackRange:2,
+      defence:25,
+      health:50,
+      level:2,
+      moveRange:2,
+      type:"bowman"};
+    const bownJson = JSON.stringify(bowm)
+    console.log(JSON.parse(bownJson))
+    const bowmRestored = new Bowman();
+    console.log(bowmRestored)
     // this.stateService.storage.clear();
     // TODO: add event listeners to gamePlay events
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
