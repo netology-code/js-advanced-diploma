@@ -1,16 +1,10 @@
-import Character from "../Character";
+import CharMath from "./CharMath";
 
-export default class Undead extends Character {
-  constructor(level) {
-    super(level);
+export default class Undead extends CharMath {
+  constructor(level, attack = 40, defence = 10) {
+    super(level, attack, defence);
     this.type = "undead";
-    this.attack = 40;
-    this.defence = 10;
     this.attackRange = 1;
     this.moveRange = 4;
-
-    if (level > 1) {
-      this.levelUp(level);
-    }
   }
 }

@@ -4,17 +4,17 @@ import Magician from "./characters/Magician";
 import Daemon from "./characters/Daemon";
 import Undead from "./characters/Undead";
 import Vampire from "./characters/Vampire";
+import PositionedCharacter from "./PositionedCharacter";
 
 export default class GameState {
   constructor(
-    move = "player",
     focusedCell,
     charactersPositions = [],
-    points,
-    maxPoints,
-    selectedCharacter
+    points = 0,
+    maxPoints = 0,
+    selectedCharacter,
+    getTheme
   ) {
-    this.move = move;
     this.focusedCell = focusedCell;
     this.charactersPositions = charactersPositions;
     this.points = points;
@@ -22,22 +22,25 @@ export default class GameState {
     this.selectedCharacter = selectedCharacter;
     this.playerTypes = [Bowman, Swordsman, Magician];
     this.enemyTypes = [Daemon, Undead, Vampire];
-  }
-
-  changeMove() {
-    this.move = this.move === "player" ? "computer" : "player";
+    this.getTheme = getTheme;
   }
 
   static from(object) {
+    console.log(object.charactersPositions);
+    const charactersPositions = object.charactersPositions.map(
+      (character) =>
+        new PositionedCharacter(character.character, character.position)
+    );
+
     return new GameState(
-      object.move,
       object.focusedCell,
-      object.charactersPositions,
+      charactersPositions,
       object.points,
       object.maxPoints,
-      object.selectCharacter,
+      object.selectedCharacter,
       object.playerTypes,
-      object.enemyTypes
+      object.enemyTypes,
+      object.getTheme
     );
   }
 }

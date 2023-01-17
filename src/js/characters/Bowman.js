@@ -1,18 +1,10 @@
-import Character from "../Character";
+import CharMath from "./CharMath";
 
-export default class Bowman extends Character {
-  constructor(level) {
-    super(level);
+export default class Bowman extends CharMath {
+  constructor(level, attack = 25, defence = 25) {
+    super(level, attack, defence);
     this.type = "bowman";
-    this.attack = 25;
-    this.defence = 25;
     this.attackRange = 2;
     this.moveRange = 2;
-
-    if (level > 1) {
-      for (let i = 1; i < level; i += 1) {
-        this.levelUp();
-      }
-    }
   }
 }
