@@ -37,12 +37,15 @@ export default class GameState {
       };
     }
     const charactersPositionsToJSON = [];
-    obj.charactersPositions.forEach((el) => {
-      charactersPositionsToJSON.push({
-        character: getClassName(el.character),
-        position: el.position,
+    if (obj.charactersPositions.length !== 0) {
+      obj.charactersPositions.forEach((el) => {
+        charactersPositionsToJSON.push({
+          character: getClassName(el.character),
+          position: el.position,
+        });
       });
-    });
+    }
+
 
     const gameStateIsJSON = {
       maxPoints: obj.maxPoints,
