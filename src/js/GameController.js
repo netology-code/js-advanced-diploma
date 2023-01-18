@@ -10,7 +10,7 @@ export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
-    this.genTheme;
+    this.genTheme = themes.get(themes.themes.prairie);
   }
 
   init() {
@@ -19,6 +19,13 @@ export default class GameController {
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
     this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
     this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
+    this.gamePlay.addNewGameListener(this.newGame.bind(this));
+    this.gamePlay.addSaveGameListener(() => {
+      this.saveToStorage(this.gameState, "save");
+    });
+    this.gamePlay.addLoadGameListener(() => {
+      this.loadFromStorage("save");
+    });
 
     // TODO: load saved stated from stateService
     if (this.stateService.storage.length !== 0) {
@@ -29,9 +36,14 @@ export default class GameController {
   }
 
   newGame() {
-    this.gameState = new GameState();
-    this.genTheme = themes.get(themes.themes.prairie);
-    this.gameState.theme = this.genTheme.next().value;
+    const maxPoints =
+      this.gameState.maxPoints > this.gameState.points
+        ? this.gameState.maxPoints
+        : this.gameState.points;
+    this.gameState = new GameState(maxPoints);
+    this.resetListeners();
+
+    this.gameState.theme = themes.themes.prairie;
     this.gamePlay.drawUi(this.gameState.theme);
 
     const playerTeam = generateTeam(this.gameState.playerTypes, 3, 4);
@@ -44,7 +56,8 @@ export default class GameController {
   }
 
   nextLevel(playerTeam) {
-    this.gamePlay.drawUi(this.genTheme.next().value);
+    this.gameState.theme = this.genTheme.next().value;
+    this.gamePlay.drawUi(this.gameState.theme);
     playerTeam.characters.forEach((character) => character.levelUp());
     this.gameState.charactersPositions = [];
 
@@ -70,11 +83,11 @@ export default class GameController {
 
       this.gameState.focusedCell = index;
       this.gamePlay.selectCell(index);
-      this.gameState.selectedCharacter = this.focusCharacter(character);
+      this.gameState.focusedCharacter = this.focusCharacter(character);
     } else if (character && !this.isPlayer(character.character)) {
       if (
-        this.gameState.selectedCharacter &&
-        this.gameState.selectedCharacter.posibleAttacks.includes(index)
+        this.gameState.focusedCharacter &&
+        this.gameState.focusedCharacter.posibleAttacks.includes(index)
       ) {
         this.attack(character).then(() => {
           this.aiMove();
@@ -82,12 +95,12 @@ export default class GameController {
       } else {
         GamePlay.showError("Выберите персонажа Игрока");
       }
-    } else if (!character && this.gameState.selectedCharacter) {
+    } else if (!character && this.gameState.focusedCharacter) {
       if (
         !this.isPlayer(character.character) &&
-        this.gameState.selectedCharacter.posibleMoves.includes(index)
+        this.gameState.focusedCharacter.posibleMoves.includes(index)
       ) {
-        this.moveCharacter(this.gameState.selectedCharacter, index);
+        this.moveCharacter(this.gameState.focusedCharacter, index);
         this.aiMove();
       }
     }
@@ -108,18 +121,18 @@ export default class GameController {
       }
     }
 
-    if (this.gameState.selectedCharacter && !character) {
-      if (this.gameState.selectedCharacter.posibleMoves.includes(index)) {
+    if (this.gameState.focusedCharacter && !character) {
+      if (this.gameState.focusedCharacter.posibleMoves.includes(index)) {
         this.gamePlay.setCursor(cursors.pointer);
         this.gamePlay.selectCell(index, "green");
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
       }
     } else if (
-      this.gameState.selectedCharacter &&
+      this.gameState.focusedCharacter &&
       !this.isPlayer(character.character)
     ) {
-      if (this.gameState.selectedCharacter.posibleAttacks.includes(index)) {
+      if (this.gameState.focusedCharacter.posibleAttacks.includes(index)) {
         this.gamePlay.setCursor(cursors.crosshair);
         this.gamePlay.selectCell(index, "red");
       } else {
@@ -135,8 +148,8 @@ export default class GameController {
     this.gamePlay.hideCellTooltip(index);
     this.gamePlay.setCursor(cursors.auto);
     if (
-      this.gameState.selectedCharacter &&
-      this.gameState.selectedCharacter.position === index
+      this.gameState.focusedCharacter &&
+      this.gameState.focusedCharacter.position === index
     ) {
       return;
     } else {
@@ -165,7 +178,7 @@ export default class GameController {
   resetSelect(cell) {
     this.gamePlay.deselectCell(cell);
     this.gameState.focusedCell = undefined;
-    this.gameState.selectedCharacter = undefined;
+    this.gameState.focusedCharacter = undefined;
   }
 
   remove(character) {
@@ -233,7 +246,7 @@ export default class GameController {
       this.gameState.enemyTypes.some((type) => el.character instanceof type)
     );
     this.saveToStorage(this.gameState);
-    this.gameState.selectedCharacter = undefined;
+    this.gameState.focusedCharacter = undefined;
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
 
     if (playerTeam.length === 0) {
@@ -241,6 +254,7 @@ export default class GameController {
         this.gameState.points > this.gameState.maxPoints
           ? this.gameState.points
           : this.gameState.maxPoints;
+      console.log(this.gameState);
       this.gamePlay.setCursor(cursors.auto);
       this.gamePlay.cellClickListeners = [];
       this.gamePlay.cellEnterListeners = [];
@@ -253,18 +267,27 @@ export default class GameController {
     }
   }
 
-  saveToStorage(obj) {
+  resetListeners() {
+    this.gamePlay.cellClickListeners = [];
+    this.gamePlay.cellEnterListeners = [];
+    this.gamePlay.cellLeaveListeners = [];
+    this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
+    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+    this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
+  }
+
+  saveToStorage(obj, name) {
     if (!("toJSON" in obj)) {
       throw new Error("Передан некорректный GameState");
     }
-    this.stateService.save(obj.toJSON());
+    this.stateService.save(obj.toJSON(), name);
   }
 
-  loadFromStorage() {
-    const gameStateFromJSON = this.stateService.load();
+  loadFromStorage(name) {
+    const gameStateFromJSON = this.stateService.load(name);
     this.gameState = GameState.from(gameStateFromJSON);
     this.gamePlay.drawUi(this.gameState.theme);
-    this.gameState.selectedCharacter = undefined;
+    this.gameState.focusedCharacter = undefined;
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
   }
 
@@ -278,24 +301,24 @@ export default class GameController {
 
   aiMove() {
     const aiCharacter = this.getEnemyCharacter();
-    this.gameState.selectedCharacter = this.focusCharacter(aiCharacter);
+    this.gameState.focusedCharacter = this.focusCharacter(aiCharacter);
 
-    if (this.gameState.selectedCharacter.posibleAttacks.length > 0) {
+    if (this.gameState.focusedCharacter.posibleAttacks.length > 0) {
       const target = this.randomTarget(
-        this.gameState.selectedCharacter.posibleAttacks
+        this.gameState.focusedCharacter.posibleAttacks
       );
       this.attack(this.hasCharacter(target));
       this.saveToStorage(this.gameState);
     } else {
       const target = this.randomTarget(
-        this.gameState.selectedCharacter.posibleMoves
+        this.gameState.focusedCharacter.posibleMoves
       );
-      this.moveCharacter(this.gameState.selectedCharacter, target);
+      this.moveCharacter(this.gameState.focusedCharacter, target);
     }
   }
 
   async attack(target) {
-    const attacker = this.gameState.selectedCharacter.character;
+    const attacker = this.gameState.focusedCharacter.character;
     const damage = +Math.max(
       attacker.attack - target.character.defence,
       attacker.attack * 0.1
@@ -307,7 +330,7 @@ export default class GameController {
 
     target.character.health -= damage;
     await this.gamePlay.showDamage(target.position, damage);
-    this.resetSelect(this.gameState.selectedCharacter.position);
+    this.resetSelect(this.gameState.focusedCharacter.position);
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
     this.moveEnd();
   }
