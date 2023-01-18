@@ -1,9 +1,9 @@
-import CharMath from "./CharMath";
+import CharMath from './CharMath';
 
 export default class Swordsman extends CharMath {
   constructor(level, health) {
     super(level, 40, 10);
-    this.type = "swordsman";
+    this.type = 'swordsman';
     this.attackRange = 1;
     this.moveRange = 4;
 
@@ -11,5 +11,6 @@ export default class Swordsman extends CharMath {
       this.health = health;
     }
   }
-  [Symbol.toStringTag] = "Swordsman";
+
+  [Symbol.toStringTag] = 'Swordsman';
 }

@@ -13,5 +13,6 @@ export default class PositionedCharacter {
     this.character = character;
     this.position = position;
   }
-  [Symbol.toStringTag] = "PositionedCharacter";
+
+  [Symbol.toStringTag] = 'PositionedCharacter';
 }

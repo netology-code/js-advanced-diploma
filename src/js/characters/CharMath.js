@@ -1,4 +1,4 @@
-import Character from "../Character";
+import Character from '../Character';
 
 export default class CharMath extends Character {
   constructor(level, attack, defence) {

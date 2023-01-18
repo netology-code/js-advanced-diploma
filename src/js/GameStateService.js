@@ -7,7 +7,7 @@ export default class GameStateService {
     if (name) {
       this.storage.setItem(name, JSON.stringify(state));
     } else {
-      this.storage.setItem("state", JSON.stringify(state));
+      this.storage.setItem('state', JSON.stringify(state));
     }
   }
 
@@ -15,11 +15,10 @@ export default class GameStateService {
     try {
       if (name) {
         return JSON.parse(this.storage.getItem(name));
-      } else {
-        return JSON.parse(this.storage.getItem("state"));
       }
+      return JSON.parse(this.storage.getItem('state'));
     } catch (e) {
-      throw new Error("Invalid state");
+      throw new Error('Invalid state');
     }
   }
 }

@@ -1,10 +1,10 @@
-import Bowman from "./characters/Bowman";
-import Swordsman from "./characters/Swordsman";
-import Magician from "./characters/Magician";
-import Daemon from "./characters/Daemon";
-import Undead from "./characters/Undead";
-import Vampire from "./characters/Vampire";
-import PositionedCharacter from "./PositionedCharacter";
+import Bowman from './characters/Bowman';
+import Swordsman from './characters/Swordsman';
+import Magician from './characters/Magician';
+import Daemon from './characters/Daemon';
+import Undead from './characters/Undead';
+import Vampire from './characters/Vampire';
+import PositionedCharacter from './PositionedCharacter';
 
 export default class GameState {
   constructor(
@@ -13,7 +13,7 @@ export default class GameState {
     charactersPositions = [],
     points = 0,
     focusedCharacter,
-    theme
+    theme,
   ) {
     this.maxPoints = maxPoints;
     this.focusedCell = focusedCell;
@@ -25,15 +25,19 @@ export default class GameState {
     this.theme = theme;
   }
 
-  toJSON() {
+  static toJSON(obj) {
+    if (!obj instanceof GameState) {
+      throw new Error('Передан некорректный GameState');
+    }
+
     function getClassName(obj) {
       return {
-        obj: obj,
+        obj,
         className: obj[Symbol.toStringTag],
       };
     }
     const charactersPositionsToJSON = [];
-    this.charactersPositions.forEach((el) => {
+    obj.charactersPositions.forEach((el) => {
       charactersPositionsToJSON.push({
         character: getClassName(el.character),
         position: el.position,
@@ -41,21 +45,21 @@ export default class GameState {
     });
 
     const gameStateIsJSON = {
-      maxPoints: this.maxPoints,
-      focusedCell: this.focusedCell,
-      points: this.points,
-      theme: this.theme,
-      charactersPositionsToJSON: charactersPositionsToJSON,
+      maxPoints: obj.maxPoints,
+      focusedCell: obj.focusedCell,
+      points: obj.points,
+      theme: obj.theme,
+      charactersPositionsToJSON,
       focusedCharacterToJSON:
-        this.focusedCharacter !== undefined && this.focusedCharacter !== null
+        obj.focusedCharacter !== undefined && obj.focusedCharacter !== null
           ? {
-              characterToJSON: getClassName(this.focusedCharacter.character),
-              position: this.focusedCharacter.position,
-              positionXY: this.focusedCharacter.positionXY,
-              posibleMoves: this.focusedCharacter.posibleMoves,
-              posibleAttacks: this.focusedCharacter.posibleAttacks,
-            }
-          : this.focusedCharacter,
+            characterToJSON: getClassName(obj.focusedCharacter.character),
+            position: obj.focusedCharacter.position,
+            positionXY: obj.focusedCharacter.positionXY,
+            posibleMoves: obj.focusedCharacter.posibleMoves,
+            posibleAttacks: obj.focusedCharacter.posibleAttacks,
+          }
+          : obj.focusedCharacter,
     };
     return gameStateIsJSON;
   }
@@ -68,24 +72,21 @@ export default class GameState {
     }
 
     const charactersPositionsFromJSON = [];
-    object.charactersPositionsToJSON.forEach((el) =>
-      charactersPositionsFromJSON.push(
-        new PositionedCharacter(createClass(el.character), el.position)
-      )
-    );
-    const focusedCharacterFromJSON =
-      object.focusedCharacterToJSON !== undefined &&
-      object.focusedCharacterToJSON !== null
-        ? {
-            character: createClass(
-              object.focusedCharacterToJSON.characterToJSON
-            ),
-            position: object.focusedCharacterToJSON.position,
-            positionXY: object.focusedCharacterToJSON.positionXY,
-            posibleMoves: object.focusedCharacterToJSON.posibleMoves,
-            posibleAttacks: object.focusedCharacterToJSON.posibleAttacks,
-          }
-        : object.focusedCharacterToJSON;
+    object.charactersPositionsToJSON.forEach((el) => charactersPositionsFromJSON.push(
+      new PositionedCharacter(createClass(el.character), el.position),
+    ));
+    const focusedCharacterFromJSON = object.focusedCharacterToJSON !== undefined
+      && object.focusedCharacterToJSON !== null
+      ? {
+        character: createClass(
+          object.focusedCharacterToJSON.characterToJSON,
+        ),
+        position: object.focusedCharacterToJSON.position,
+        positionXY: object.focusedCharacterToJSON.positionXY,
+        posibleMoves: object.focusedCharacterToJSON.posibleMoves,
+        posibleAttacks: object.focusedCharacterToJSON.posibleAttacks,
+      }
+      : object.focusedCharacterToJSON;
 
     return new GameState(
       object.maxPoints,
@@ -93,7 +94,7 @@ export default class GameState {
       charactersPositionsFromJSON,
       object.points,
       focusedCharacterFromJSON,
-      object.theme
+      object.theme,
     );
   }
 }

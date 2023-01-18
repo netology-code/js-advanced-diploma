@@ -1,9 +1,9 @@
-import CharMath from "./CharMath";
+import CharMath from './CharMath';
 
 export default class Vampire extends CharMath {
   constructor(level, health) {
     super(level, 25, 25);
-    this.type = "vampire";
+    this.type = 'vampire';
     this.attackRange = 2;
     this.moveRange = 2;
 
@@ -11,5 +11,6 @@ export default class Vampire extends CharMath {
       this.health = health;
     }
   }
-  [Symbol.toStringTag] = "Vampire";
+
+  [Symbol.toStringTag] = 'Vampire';
 }
