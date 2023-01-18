@@ -1,10 +1,15 @@
 import CharMath from "./CharMath";
 
 export default class Magician extends CharMath {
-  constructor(level, attack = 10, defence = 40) {
-    super(level, attack, defence);
+  constructor(level, health) {
+    super(level, 10, 40);
     this.type = "magician";
     this.attackRange = 4;
     this.moveRange = 1;
+
+    if (health) {
+      this.health = health;
+    }
   }
+  [Symbol.toStringTag] = "Magician";
 }

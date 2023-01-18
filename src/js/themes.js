@@ -5,9 +5,10 @@ let themes = {
     arctic: "arctic",
     mountain: "mountain",
   },
-  get: function* (indexStart) {
+  get: function* (theme) {
     const values = Object.values(this.themes);
-    let index = indexStart !== undefined ? indexStart % values.length : 0;
+    const themeIndex = values.findIndex((el) => el === theme);
+    let index = themeIndex !== -1 ? themeIndex % values.length : 0;
     while (true) {
       yield values[index];
       index = ++index % values.length === 0 ? 0 : index % values.length;

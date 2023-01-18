@@ -5,26 +5,15 @@ import PositionedCharacter from "./PositionedCharacter";
 import GamePlay from "./GamePlay";
 import GameState from "./GameState";
 import Team from "./Team";
-import Bowman from "./characters/Bowman";
 
 export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
+    this.genTheme;
   }
 
   init() {
-    const bowm = {attack: 25,
-      attackRange:2,
-      defence:25,
-      health:50,
-      level:2,
-      moveRange:2,
-      type:"bowman"};
-    const bownJson = JSON.stringify(bowm)
-    console.log(JSON.parse(bownJson))
-    const bowmRestored = new Bowman();
-    console.log(bowmRestored)
     // this.stateService.storage.clear();
     // TODO: add event listeners to gamePlay events
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
@@ -33,12 +22,7 @@ export default class GameController {
 
     // TODO: load saved stated from stateService
     if (this.stateService.storage.length !== 0) {
-      this.gameState = GameState.from(this.stateService.load());
-      console.log(this.gameState);
-      this.gameState.getTheme = themes.get(0);
-      this.gamePlay.drawUi(this.gameState.getTheme.next().value);
-      this.gameState.selectedCharacter = undefined;
-      this.gamePlay.redrawPositions(this.gameState.charactersPositions);
+      this.loadFromStorage();
     } else {
       this.newGame();
     }
@@ -46,8 +30,9 @@ export default class GameController {
 
   newGame() {
     this.gameState = new GameState();
-    this.gameState.getTheme = themes.get(0);
-    this.gamePlay.drawUi(this.gameState.getTheme.next().value);
+    this.genTheme = themes.get(themes.themes.prairie);
+    this.gameState.theme = this.genTheme.next().value;
+    this.gamePlay.drawUi(this.gameState.theme);
 
     const playerTeam = generateTeam(this.gameState.playerTypes, 3, 4);
     this.positionTeam(playerTeam, [1, 2]);
@@ -59,7 +44,7 @@ export default class GameController {
   }
 
   nextLevel(playerTeam) {
-    this.gamePlay.drawUi(this.gameState.getTheme.next().value);
+    this.gamePlay.drawUi(this.genTheme.next().value);
     playerTeam.characters.forEach((character) => character.levelUp());
     this.gameState.charactersPositions = [];
 
@@ -109,11 +94,8 @@ export default class GameController {
   }
 
   onCellEnter(index) {
-    console.log(this.gameState.selectedCharacter);
-
     // TODO: react to mouse enter
     const character = this.hasCharacter(index);
-    console.log(character);
     if (character) {
       const { level, attack, defence, health } = character.character;
       this.gamePlay.showCellTooltip(
@@ -182,8 +164,8 @@ export default class GameController {
 
   resetSelect(cell) {
     this.gamePlay.deselectCell(cell);
-    this.gameState.focusedCell = null;
-    this.gameState.selectedCharacter = null;
+    this.gameState.focusedCell = undefined;
+    this.gameState.selectedCharacter = undefined;
   }
 
   remove(character) {
@@ -250,12 +232,11 @@ export default class GameController {
     const enemyTeam = this.gameState.charactersPositions.filter((el) =>
       this.gameState.enemyTypes.some((type) => el.character instanceof type)
     );
-    this.stateService.save(this.gameState);
-    this.gameState.selectedCharacter = null;
+    this.saveToStorage(this.gameState);
+    this.gameState.selectedCharacter = undefined;
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
 
     if (playerTeam.length === 0) {
-      console.log("конец");
       this.gameState.maxPoints =
         this.gameState.points > this.gameState.maxPoints
           ? this.gameState.points
@@ -264,13 +245,27 @@ export default class GameController {
       this.gamePlay.cellClickListeners = [];
       this.gamePlay.cellEnterListeners = [];
       this.gamePlay.cellLeaveListeners = [];
-      // console.log(this);
     } else if (enemyTeam.length === 0) {
       const unposPlayerTeam = playerTeam.map(
         (character) => character.character
       );
       this.nextLevel(new Team(unposPlayerTeam));
     }
+  }
+
+  saveToStorage(obj) {
+    if (!("toJSON" in obj)) {
+      throw new Error("Передан некорректный GameState");
+    }
+    this.stateService.save(obj.toJSON());
+  }
+
+  loadFromStorage() {
+    const gameStateFromJSON = this.stateService.load();
+    this.gameState = GameState.from(gameStateFromJSON);
+    this.gamePlay.drawUi(this.gameState.theme);
+    this.gameState.selectedCharacter = undefined;
+    this.gamePlay.redrawPositions(this.gameState.charactersPositions);
   }
 
   moveCharacter(character, index) {
@@ -290,6 +285,7 @@ export default class GameController {
         this.gameState.selectedCharacter.posibleAttacks
       );
       this.attack(this.hasCharacter(target));
+      this.saveToStorage(this.gameState);
     } else {
       const target = this.randomTarget(
         this.gameState.selectedCharacter.posibleMoves
