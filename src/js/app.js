@@ -12,6 +12,4 @@ const stateService = new GameStateService(localStorage);
 
 const gameCtrl = new GameController(gamePlay, stateService);
 gameCtrl.init();
-
-console.log(gameCtrl);
 // don't write your code here
