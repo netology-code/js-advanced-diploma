@@ -1,16 +1,15 @@
-import themes from './themes';
-import cursors from './cursors';
-import { generateTeam } from './generators';
-import PositionedCharacter from './PositionedCharacter';
-import GamePlay from './GamePlay';
-import GameState from './GameState';
-import Team from './Team';
+import { themes, themesGenerator } from "./themes";
+import cursors from "./cursors";
+import { generateTeam } from "./generators";
+import PositionedCharacter from "./PositionedCharacter";
+import GamePlay from "./GamePlay";
+import GameState from "./GameState";
+import Team from "./Team";
 
 export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
-    this.genTheme = themes.get(themes.themes.prairie);
   }
 
   init() {
@@ -21,14 +20,14 @@ export default class GameController {
     this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
     this.gamePlay.addNewGameListener(this.newGame.bind(this));
     this.gamePlay.addSaveGameListener(() => {
-      this.saveToStorage(this.gameState, 'save');
+      this.saveToStorage(this.gameState, "save");
     });
     this.gamePlay.addLoadGameListener(() => {
-      this.loadFromStorage('save');
+      this.loadFromStorage("save");
     });
 
     // TODO: load saved stated from stateService
-    if (this.stateService.storage.length !== 0) {
+    if (this.stateService.load()) {
       this.loadFromStorage();
     } else {
       this.newGame();
@@ -36,20 +35,14 @@ export default class GameController {
   }
 
   newGame() {
+    //transfer maxPoints
     if (this.gameState) {
-      const maxPoints = this.gameState.maxPoints > this.gameState.points
-        ? this.gameState.maxPoints
-        : this.gameState.points;
-      this.gameState = new GameState(maxPoints);
+      this.gameState = new GameState(this.getMaxPoints());
     } else {
       this.gameState = new GameState();
     }
-
     this.resetListeners();
-
-    this.gameState.theme = themes.themes.prairie;
-    this.genTheme.next();
-    this.gamePlay.drawUi(this.gameState.theme);
+    this.setTheme();
 
     const playerTeam = generateTeam(this.gameState.playerTypes, 3, 4);
     this.positionTeam(playerTeam, [1, 2]);
@@ -61,21 +54,17 @@ export default class GameController {
   }
 
   nextLevel(playerTeam) {
-    this.gameState.theme = this.genTheme.next().value;
-    this.gamePlay.drawUi(this.gameState.theme);
+    this.nextTheme();
     playerTeam.characters.forEach((character) => character.levelUp());
     this.gameState.charactersPositions = [];
 
     this.positionTeam(playerTeam, [1, 2]);
-    let EnemyLevel = playerTeam.characters.reduce(
-      (max, character) => {
-        max = Math.max(max, character.level);
-        return max;
-      },
-      0,
-    );
+    let enemyLevel = playerTeam.characters.reduce((max, character) => {
+      max = Math.max(max, character.level);
+      return max;
+    }, 0);
 
-    const enemyTeam = generateTeam(this.gameState.enemyTypes, ++EnemyLevel, 4);
+    const enemyTeam = generateTeam(this.gameState.enemyTypes, ++enemyLevel, 4);
     this.positionTeam(enemyTeam, [7, 8]);
 
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
@@ -85,70 +74,65 @@ export default class GameController {
     // TODO: react to click
     const character = this.hasCharacter(index);
     if (character && this.isPlayer(character.character)) {
-      if (this.gameState.focusedCell) {
-        this.gamePlay.deselectCell(this.gameState.focusedCell);
-      }
-
-      this.gameState.focusedCell = index;
-      this.gamePlay.selectCell(index);
-      this.gameState.focusedCharacter = this.focusCharacter(character);
+      this.unfocusCell();
+      this.focusCell(index);
+      this.focusCharacter(character);
     } else if (character && !this.isPlayer(character.character)) {
       if (
-        this.gameState.focusedCharacter
-        && this.gameState.focusedCharacter.posibleAttacks.includes(index)
+        this.gameState.focusedCharacter &&
+        this.gameState.focusedCharacter.posibleAttacks.includes(index)
       ) {
         this.attack(character).then(() => {
           this.aiMove();
         });
       } else {
-        GamePlay.showError('Выберите персонажа Игрока');
+        GamePlay.showError("Выберите персонажа Игрока");
       }
     } else if (!character && this.gameState.focusedCharacter) {
       if (
-        !this.isPlayer(character.character)
-        && this.gameState.focusedCharacter.posibleMoves.includes(index)
+        !this.isPlayer(character.character) &&
+        this.gameState.focusedCharacter.posibleMoves.includes(index)
       ) {
         this.moveCharacter(this.gameState.focusedCharacter, index);
         this.aiMove();
       }
     }
+    console.log(this.gameState);
   }
 
   onCellEnter(index) {
     // TODO: react to mouse enter
-    const character = this.hasCharacter(index);
-    if (character) {
-      const {
-        level, attack, defence, health,
-      } = character.character;
+    const characterInCell = this.hasCharacter(index);
+    if (characterInCell) {
+      const { level, attack, defence, health } = characterInCell.character;
       this.gamePlay.showCellTooltip(
         `\u{1F396}${level} \u{2694}${attack} \u{1F6E1}${defence} \u{2764}${health}`,
-        index,
+        index
       );
 
-      if (this.isPlayer(character.character)) {
+      if (this.isPlayer(characterInCell.character)) {
         this.gamePlay.setCursor(cursors.pointer);
       }
     }
 
-    if (this.gameState.focusedCharacter && !character) {
+    if (this.gameState.focusedCharacter && !characterInCell) {
       if (this.gameState.focusedCharacter.posibleMoves.includes(index)) {
         this.gamePlay.setCursor(cursors.pointer);
-        this.gamePlay.selectCell(index, 'green');
+        this.gamePlay.selectCell(index, "green");
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
       }
     } else if (
-      this.gameState.focusedCharacter
-      && !this.isPlayer(character.character)
+      this.gameState.focusedCharacter &&
+      !this.isPlayer(characterInCell.character)
     ) {
       if (this.gameState.focusedCharacter.posibleAttacks.includes(index)) {
         this.gamePlay.setCursor(cursors.crosshair);
-        this.gamePlay.selectCell(index, 'red');
+        this.gamePlay.selectCell(index, "red");
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
       }
-    } else if (!this.isPlayer(character.character)) {
+    } else if (!this.isPlayer(characterInCell.character)) {
       this.gamePlay.setCursor(cursors.notallowed);
     }
   }
@@ -158,10 +142,9 @@ export default class GameController {
     this.gamePlay.hideCellTooltip(index);
     this.gamePlay.setCursor(cursors.auto);
     if (
-      this.gameState.focusedCharacter
-      && this.gameState.focusedCharacter.position === index
+      this.gameState.focusedCharacter &&
+      this.gameState.focusedCharacter.position === index
     ) {
-
     } else {
       this.gamePlay.deselectCell(index);
     }
@@ -180,20 +163,14 @@ export default class GameController {
 
     team.characters.forEach((character) => {
       this.gameState.charactersPositions.push(
-        new PositionedCharacter(character, this.getRandomPosition(allowedCells)),
+        new PositionedCharacter(character, this.getRandomPosition(allowedCells))
       );
     });
   }
 
-  resetSelect(cell) {
-    this.gamePlay.deselectCell(cell);
-    this.gameState.focusedCell = undefined;
-    this.gameState.focusedCharacter = undefined;
-  }
-
   remove(character) {
     const index = this.gameState.charactersPositions.findIndex(
-      (el) => el.character === character,
+      (el) => el.character === character
     );
     this.gameState.charactersPositions.splice(index, 1);
   }
@@ -206,15 +183,17 @@ export default class GameController {
     return position;
   }
 
-  hasCharacter(position) {
+  hasCharacter(index) {
     const character = this.gameState.charactersPositions.find(
-      (char) => char.position === position,
+      (char) => char.position === index
     );
     return character || false;
   }
 
   getEnemyCharacter() {
-    const enemyTeam = this.gameState.charactersPositions.filter((el) => this.gameState.enemyTypes.some((type) => el.character instanceof type));
+    const enemyTeam = this.gameState.charactersPositions.filter((el) =>
+      this.gameState.enemyTypes.some((type) => el.character instanceof type)
+    );
     const aiCharacter = this.randomTarget(enemyTeam);
     return aiCharacter;
   }
@@ -225,15 +204,15 @@ export default class GameController {
 
   isSameTeam(character1, character2) {
     const character1IsPlayer = this.gameState.playerTypes.some(
-      (type) => character1 instanceof type,
+      (type) => character1 instanceof type
     )
-      ? 'player'
-      : 'enemy';
+      ? "player"
+      : "enemy";
     const character2IsPlayer = this.gameState.playerTypes.some(
-      (type) => character2 instanceof type,
+      (type) => character2 instanceof type
     )
-      ? 'player'
-      : 'enemy';
+      ? "player"
+      : "enemy";
 
     if (character1IsPlayer === character2IsPlayer) {
       return true;
@@ -246,23 +225,25 @@ export default class GameController {
       .filter((el) => el.character.health <= 0)
       .forEach((el) => this.remove(el.character));
 
-    const playerTeam = this.gameState.charactersPositions.filter((el) => this.isPlayer(el.character));
-    const enemyTeam = this.gameState.charactersPositions.filter((el) => this.gameState.enemyTypes.some((type) => el.character instanceof type));
+    const playerTeam = this.gameState.charactersPositions.filter((el) =>
+      this.isPlayer(el.character)
+    );
+    const enemyTeam = this.gameState.charactersPositions.filter((el) =>
+      this.gameState.enemyTypes.some((type) => el.character instanceof type)
+    );
     this.saveToStorage(this.gameState);
-    this.gameState.focusedCharacter = undefined;
+    this.unfocusCharacter();
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
 
     if (playerTeam.length === 0) {
-      this.gameState.maxPoints = this.gameState.points > this.gameState.maxPoints
-        ? this.gameState.points
-        : this.gameState.maxPoints;
+      this.gameState.maxPoints = this.getMaxPoints();
       this.gamePlay.setCursor(cursors.auto);
       this.gamePlay.cellClickListeners = [];
       this.gamePlay.cellEnterListeners = [];
       this.gamePlay.cellLeaveListeners = [];
     } else if (enemyTeam.length === 0) {
       const unposPlayerTeam = playerTeam.map(
-        (character) => character.character,
+        (character) => character.character
       );
       this.nextLevel(new Team(unposPlayerTeam));
     }
@@ -284,8 +265,8 @@ export default class GameController {
   loadFromStorage(name) {
     const gameStateFromJSON = this.stateService.load(name);
     this.gameState = GameState.from(gameStateFromJSON);
-    this.gamePlay.drawUi(this.gameState.theme);
-    this.gameState.focusedCharacter = undefined;
+    this.setTheme(this.gameState.theme);
+    this.unfocusCharacter();
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
   }
 
@@ -293,23 +274,23 @@ export default class GameController {
     this.hasCharacter(character.position).position = index;
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
 
-    this.resetSelect(character.position);
+    this.unfocusAll(character.position);
     this.moveEnd();
   }
 
   aiMove() {
     const aiCharacter = this.getEnemyCharacter();
-    this.gameState.focusedCharacter = this.focusCharacter(aiCharacter);
+    this.focusCharacter(aiCharacter);
 
     if (this.gameState.focusedCharacter.posibleAttacks.length > 0) {
       const target = this.randomTarget(
-        this.gameState.focusedCharacter.posibleAttacks,
+        this.gameState.focusedCharacter.posibleAttacks
       );
       this.attack(this.hasCharacter(target));
       this.saveToStorage(this.gameState);
     } else {
       const target = this.randomTarget(
-        this.gameState.focusedCharacter.posibleMoves,
+        this.gameState.focusedCharacter.posibleMoves
       );
       this.moveCharacter(this.gameState.focusedCharacter, target);
     }
@@ -319,7 +300,7 @@ export default class GameController {
     const attacker = this.gameState.focusedCharacter.character;
     const damage = +Math.max(
       attacker.attack - target.character.defence,
-      attacker.attack * 0.1,
+      attacker.attack * 0.1
     ).toFixed(0);
 
     if (this.isPlayer(attacker)) {
@@ -328,7 +309,7 @@ export default class GameController {
 
     target.character.health -= damage;
     await this.gamePlay.showDamage(target.position, damage);
-    this.resetSelect(this.gameState.focusedCharacter.position);
+    this.unfocusAll(this.gameState.focusedCharacter.position);
     this.gamePlay.redrawPositions(this.gameState.charactersPositions);
     this.moveEnd();
   }
@@ -342,9 +323,10 @@ export default class GameController {
     const posibleMoves = [];
 
     const start = (i, attibute) => (i - attibute >= 0 ? i - attibute : 0);
-    const end = (i, attibute) => (i + attibute < this.gamePlay.boardSize
-      ? i + attibute
-      : this.gamePlay.boardSize - 1);
+    const end = (i, attibute) =>
+      i + attibute < this.gamePlay.boardSize
+        ? i + attibute
+        : this.gamePlay.boardSize - 1;
 
     for (
       let i = start(y, character.attackRange);
@@ -390,13 +372,58 @@ export default class GameController {
       }
     }
 
-    return {
+    this.gameState.focusedCharacter = {
       character,
       position,
       positionXY: { x, y },
       posibleMoves,
       posibleAttacks,
     };
+  }
+
+  focusCell(index, color) {
+    this.gamePlay.selectCell(index, color);
+    this.gameState.focusedCell = index;
+  }
+
+  unfocusCharacter() {
+    this.gameState.focusedCharacter = undefined;
+  }
+
+  unfocusCell(index = this.gameState.focusedCell) {
+    if (this.gameState.focusedCell) {
+      this.gamePlay.deselectCell(index);
+    }
+    this.gameState.focusedCell = undefined;
+  }
+
+  unfocusAll(index) {
+    this.unfocusCell(index);
+    this.unfocusCharacter();
+  }
+
+  setTheme(startTheme = themes.prairie) {
+    this.gameState.theme = startTheme;
+    this.genTheme = themesGenerator(startTheme);
+    this.genTheme.next();
+    this.gamePlay.drawUi(this.gameState.theme);
+  }
+
+  nextTheme() {
+    try {
+      this.gameState.theme = this.genTheme.next().value;
+    } catch (e) {
+      throw new Error("themes generator is undefined");
+    }
+    this.gamePlay.drawUi(this.gameState.theme);
+  }
+
+  getMaxPoints() {
+    if (this.gameState.points > this.gameState.maxPoints) {
+      return this.gameState.points;
+    } else {
+      return this.gameState.maxPoints;
+    }
   }
 
   randomTarget(arr) {
