@@ -13,7 +13,6 @@ export default class GameController {
   }
 
   init() {
-    // this.stateService.storage.clear();
     // TODO: add event listeners to gamePlay events
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
     this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
@@ -97,7 +96,6 @@ export default class GameController {
         this.aiMove();
       }
     }
-    console.log(this.gameState);
   }
 
   onCellEnter(index) {

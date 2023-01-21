@@ -68,20 +68,31 @@ export default class GameState {
 
   static from(object) {
     function createClass(obj) {
-      const typesChar = [Bowman, Swordsman, Magician, Daemon, Undead, Vampire];
-      const func = typesChar.find((el) => el.name === obj.className);
-      return new func(obj.obj.level, obj.obj.health);
+      switch (obj.className) {
+        case 'Bowman': 
+        return new Bowman(obj.obj.level, obj.obj.health);
+        case 'Swordsman': 
+        return new Swordsman(obj.obj.level, obj.obj.health);
+        case 'Magician': 
+        return new Magician(obj.obj.level, obj.obj.health);
+        case 'Daemon': 
+        return new Daemon(obj.obj.level, obj.obj.health);
+        case 'Vampire': 
+        return new Vampire(obj.obj.level, obj.obj.health);
+        case 'Undead': 
+        return new Undead(obj.obj.level, obj.obj.health);
+      }
     }
 
     const charactersPositionsFromJSON = [];
-    object.charactersPositionsToJSON.forEach((el) =>
+    object.charactersPositionsToJSON.forEach((el) => {
       charactersPositionsFromJSON.push(
         new PositionedCharacter(createClass(el.character), el.position)
       )
+    }
     );
     const focusedCharacterFromJSON =
-      object.focusedCharacterToJSON !== undefined &&
-      object.focusedCharacterToJSON !== null
+      object.focusedCharacterToJSON !== undefined
         ? {
             character: createClass(
               object.focusedCharacterToJSON.characterToJSON
@@ -91,11 +102,14 @@ export default class GameState {
             posibleMoves: object.focusedCharacterToJSON.posibleMoves,
             posibleAttacks: object.focusedCharacterToJSON.posibleAttacks,
           }
-        : object.focusedCharacterToJSON;
+        : undefined;
+    
+        const focusCell = object.focusedCell ? object.focusedCell : undefined;
+    
 
     return new GameState(
       object.maxPoints,
-      object.focusedCell,
+      focusCell,
       charactersPositionsFromJSON,
       object.points,
       focusedCharacterFromJSON,
