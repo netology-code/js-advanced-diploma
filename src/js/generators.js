@@ -1,3 +1,9 @@
+function randomFromRange(from, to) {
+  const rangeLength = to - from + 1;
+
+  return Math.floor(Math.random() * rangeLength) + from;
+}
+
 /**
  * Формирует экземпляр персонажа из массива allowedTypes со
  * случайным уровнем от 1 до maxLevel
@@ -9,7 +15,12 @@
  *
  */
 export function* characterGenerator(allowedTypes, maxLevel) {
-  // TODO: write logic here
+  while (true) {
+    const level = randomFromRange(1, maxLevel);
+    const index = randomFromRange(0, allowedTypes.length - 1);
+
+    yield new allowedTypes[index](level);
+  }
 }
 
 /**
