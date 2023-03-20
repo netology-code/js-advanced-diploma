@@ -20,5 +20,6 @@ export default class Character {
     this.health = 50;
     this.type = type;
     // TODO: выбросите исключение, если кто-то использует "new Character()"
+    throw new Error('use "new Character()" denied');
   }
 }
