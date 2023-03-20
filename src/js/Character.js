@@ -19,7 +19,9 @@ export default class Character {
     this.defence = 0;
     this.health = 50;
     this.type = type;
-    // TODO: выбросите исключение, если кто-то использует "new Character()"
-    throw new Error('use "new Character()" denied');
+
+    if (new.target.name === 'Character') {
+      throw new Error('use "new Character()" denied');
+    }
   }
 }
