@@ -1,0 +1,39 @@
+{
+  "extends": "airbnb-base",
+  "env": {
+     "es6": true,
+     "browser": true,
+     "jest": true
+  },
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      "LabeledStatement",
+      "WithStatement"
+    ],
+    "arrow-parens": [
+      "error",
+      "as-needed"
+    ],
+    "class-methods-use-this": [
+      "error",
+      { "enforceForClassFields": false }
+    ],
+    "max-len": [
+      "error",
+      {"code": 120}
+    ],
+    "no-plusplus": [
+      "error",
+      { "allowForLoopAfterthoughts": true }
+    ],
+    "no-underscore-dangle": [
+      "error", 
+      { "allowAfterThis": true }
+    ],
+    "no-param-reassign": [
+      "error",
+      { "props": true, "ignorePropertyModificationsFor": ["cell"] }
+    ]
+  }
+}
