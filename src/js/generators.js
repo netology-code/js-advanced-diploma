@@ -1,6 +1,6 @@
 import Team from './Team';
 
-function randomFromRange(from, to) {
+export function randomFromRange(from, to) {
   const rangeLength = to - from + 1;
 
   return Math.floor(Math.random() * rangeLength) + from;
