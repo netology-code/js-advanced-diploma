@@ -1,4 +1,4 @@
-import { calcTileType } from '../utils';
+import { calcTileType, calcHealthLevel } from '../utils';
 
 describe('utils', () => {
   test.each([
@@ -13,5 +13,15 @@ describe('utils', () => {
     [8, 5, 'center'],
   ])('position with index %i of board size: %i, should be: %s', (index, boardSize, result) => {
     expect(calcTileType(index, boardSize)).toBe(result);
+  });
+
+  test.each([
+    [0, 'critical'],
+    [10, 'critical'],
+    [15, 'normal'],
+    [45, 'normal'],
+    [50, 'high'],
+  ])('when health level: %i, shoul return: %s', (level, result) => {
+    expect(calcHealthLevel(level)).toBe(result);
   });
 });
