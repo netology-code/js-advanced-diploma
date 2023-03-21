@@ -1,5 +1,6 @@
 import { generateTeam, randomFromRange } from './generators';
 import themes from './themes';
+import PositionedCharacter from './PositionedCharacter';
 import {
   Bowman, Swordsman, Magician, Vampire, Undead, Daemon,
 } from './Characters/Characters';
@@ -18,56 +19,62 @@ export default class GameController {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
 
+    this.positionedCharacters = [];
     this.gamePlay.drawUi(themes.prairie);
-    // create team for player
+    // create team for player & computer
     this.userPlayerTeam = generateTeam(this.userPlayerTypes, 1, this.countOfChars);
-    // create team for computer
     this.compPlayerTeam = generateTeam(this.compPlayerTypes, 1, this.countOfChars);
+
     // place characters on board
     this.placeUserTeamOnBoard();
     this.placeCompTeamOnBoard();
-    // binding characters to cell
 
     // reDrawPositions
+    this.gamePlay.redrawPositions(this.positionedCharacters);
   }
 
   placeUserTeamOnBoard() {
-    const positions = [];
-    let counter = 0;
-    while (counter < this.countOfChars) {
-      const position = this.getRandomUserCharPosition();
+    const positions = this.getInitialPositions('user');
 
-      if (!positions.includes(position)) {
-        positions.push(position);
-        counter += 1;
-      }
-    }
-    console.log(positions);
+    this.userPlayerTeam.characters.forEach((character, index) => {
+      this.positionedCharacters.push(new PositionedCharacter(character, positions[index]));
+    });
+    console.log(this.positionedCharacters);
   }
 
   placeCompTeamOnBoard() {
+    const positions = this.getInitialPositions('comp');
+
+    this.compPlayerTeam.characters.forEach((character, index) => {
+      this.positionedCharacters.push(new PositionedCharacter(character, positions[index]));
+    });
+    console.log(this.positionedCharacters);
+  }
+
+  getInitialPositions(playerType) {
     const positions = [];
     let counter = 0;
     while (counter < this.countOfChars) {
-      const position = this.getRandomCompCharPosition();
+      const position = playerType === 'user' ? this.getRandomUserCharPosition() : this.getRandomCompCharPosition();
 
       if (!positions.includes(position)) {
         positions.push(position);
         counter += 1;
       }
     }
-    console.log(positions);
+    return positions;
   }
 
   getRandomUserCharPosition() {
-    return this.getRandomCellInTwoColumns(this.gamePlay.boardSize, 0);
+    return this.getRandomCellInTwoColumns(0);
   }
 
   getRandomCompCharPosition() {
-    return this.getRandomCellInTwoColumns(this.gamePlay.boardSize, 6);
+    return this.getRandomCellInTwoColumns(this.gamePlay.boardSize - 2);
   }
 
-  getRandomCellInTwoColumns(boardSize, shift) {
+  getRandomCellInTwoColumns(shift) {
+    const { boardSize } = this.gamePlay;
     const index = randomFromRange(0, boardSize * 2 - 1);
 
     if (index < boardSize) {
