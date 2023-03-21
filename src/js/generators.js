@@ -1,3 +1,5 @@
+import Team from './Team';
+
 function randomFromRange(from, to) {
   const rangeLength = to - from + 1;
 
@@ -31,5 +33,12 @@ export function* characterGenerator(allowedTypes, maxLevel) {
  * @returns экземпляр Team, хранящий экземпляры персонажей. Количество персонажей в команде - characterCount
  * */
 export function generateTeam(allowedTypes, maxLevel, characterCount) {
-  // TODO: write logic here
+  const characters = [];
+  const playerGenerator = characterGenerator(allowedTypes, maxLevel);
+
+  for (let i = 0; i < characterCount; i++) {
+    characters.push(playerGenerator.next().value);
+  }
+
+  return new Team(characters);
 }
