@@ -12,18 +12,21 @@ export default class GameController {
 
     this.userPlayerTypes = [Bowman, Swordsman, Magician];
     this.compPlayerTypes = [Vampire, Undead, Daemon];
-    this.countOfChars = 2; // Уточнить !!!
   }
 
   init() {
+    this.gamePlay.drawUi(themes.prairie);
+
     // TODO: add event listeners to gamePlay events
+    this.registerEventListeners();
+
     // TODO: load saved stated from stateService
 
     this.positionedCharacters = [];
-    this.gamePlay.drawUi(themes.prairie);
+
     // create team for player & computer
-    this.userPlayerTeam = generateTeam(this.userPlayerTypes, 1, this.countOfChars);
-    this.compPlayerTeam = generateTeam(this.compPlayerTypes, 1, this.countOfChars);
+    this.userPlayerTeam = generateTeam(this.userPlayerTypes, 1, this.gamePlay.initialCountOfChars);
+    this.compPlayerTeam = generateTeam(this.compPlayerTypes, 1, this.gamePlay.initialCountOfChars);
 
     // place characters on board
     this.placeUserTeamOnBoard();
@@ -31,6 +34,13 @@ export default class GameController {
 
     // reDrawPositions
     this.gamePlay.redrawPositions(this.positionedCharacters);
+
+    // console.log(this.positionedCharacters[0].character);
+  }
+
+  registerEventListeners() {
+    this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
+    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
   }
 
   placeUserTeamOnBoard() {
@@ -39,7 +49,6 @@ export default class GameController {
     this.userPlayerTeam.characters.forEach((character, index) => {
       this.positionedCharacters.push(new PositionedCharacter(character, positions[index]));
     });
-    console.log(this.positionedCharacters);
   }
 
   placeCompTeamOnBoard() {
@@ -48,13 +57,12 @@ export default class GameController {
     this.compPlayerTeam.characters.forEach((character, index) => {
       this.positionedCharacters.push(new PositionedCharacter(character, positions[index]));
     });
-    console.log(this.positionedCharacters);
   }
 
   getInitialPositions(playerType) {
     const positions = [];
     let counter = 0;
-    while (counter < this.countOfChars) {
+    while (counter < this.gamePlay.initialCountOfChars) {
       const position = playerType === 'user' ? this.getRandomUserCharPosition() : this.getRandomCompCharPosition();
 
       if (!positions.includes(position)) {
@@ -88,10 +96,25 @@ export default class GameController {
   }
 
   onCellEnter(index) {
-    // TODO: react to mouse enter
+    const character = this.getCharInPosition(index);
+    if (character) {
+      const {
+        level, attack, defence, health,
+      } = character;
+      const tooltip = `\u{1F396}${level} \u{2694}${attack} \u{1F6E1}${defence} \u{2764}${health}`;
+
+      this.gamePlay.showCellTooltip(tooltip, index);
+    }
   }
 
   onCellLeave(index) {
     // TODO: react to mouse leave
+    this.gamePlay.hideCellTooltip(index);
+  }
+
+  getCharInPosition(index) {
+    const positionedChar = this.positionedCharacters.find(o => o.position === index);
+
+    return positionedChar === undefined ? null : positionedChar.character;
   }
 }

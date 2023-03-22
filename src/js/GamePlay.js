@@ -3,6 +3,7 @@ import { calcHealthLevel, calcTileType } from './utils';
 export default class GamePlay {
   constructor() {
     this.boardSize = 8;
+    this.initialCountOfChars = 3;
     this.container = null;
     this.boardEl = null;
     this.cells = [];
@@ -82,7 +83,10 @@ export default class GamePlay {
       healthEl.classList.add('health-level');
 
       const healthIndicatorEl = document.createElement('div');
-      healthIndicatorEl.classList.add('health-level-indicator', `health-level-indicator-${calcHealthLevel(position.character.health)}`);
+      healthIndicatorEl.classList.add(
+        'health-level-indicator',
+        `health-level-indicator-${calcHealthLevel(position.character.health)}`,
+      );
       healthIndicatorEl.style.width = `${position.character.health}%`;
       healthEl.appendChild(healthIndicatorEl);
 

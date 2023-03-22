@@ -1,4 +1,5 @@
 dist
+config
 coverage
 docs
 src/js/__tests__
