@@ -6,6 +6,7 @@ import PositionedCharacter from './PositionedCharacter';
 import {
   Bowman, Swordsman, Magician, Vampire, Undead, Daemon,
 } from './Characters/Characters';
+import cursors from './cursors';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -97,34 +98,48 @@ export default class GameController {
 
   onCellClick(index) {
     const character = this.getCharInPosition(index);
+
     if (!character) {
       return;
     }
-    if (!this.isUserPlayer(character)) {
+    if (!this.isUserCharacter(character)) {
       GamePlay.showError('Это не ваш персонаж!');
       return;
     }
     if (this.gameState.selectedIndex) {
       this.gamePlay.deselectCell(this.gameState.selectedIndex);
+      // this.getCharInPosition(this.gameState.selectedIndex).isSelected = false; // utochnit
     }
     this.gameState.selectedIndex = index;
+    // character.isSelected = true; // utochnit
+    this.gameState.isCharacterSelected = true;
     this.gamePlay.selectCell(index);
   }
 
   onCellEnter(index) {
     const character = this.getCharInPosition(index);
-    if (character) {
-      const {
-        level, attack, defence, health,
-      } = character;
-      const tooltip = `\u{1F396}${level} \u{2694}${attack} \u{1F6E1}${defence} \u{2764}${health}`;
 
-      this.gamePlay.showCellTooltip(tooltip, index);
+    if (character) {
+      this.setTooltipOnCharacter(index, character);
+    }
+    if (this.isUserCharacter(character)) {
+      this.gamePlay.setCursor(cursors.pointer);
+    }
+    if (character && !this.isUserCharacter(character)) {
+      this.gamePlay.setCursor(cursors.crosshair);
+      this.gamePlay.selectCell(index, 'red');
     }
   }
 
   onCellLeave(index) {
-    this.gamePlay.hideCellTooltip(index);
+    const character = this.getCharInPosition(index);
+
+    this.hideTooltipOnCharacter(index);
+    this.gamePlay.setCursor(cursors.auto);
+
+    if (character && !this.isUserCharacter(character)) {
+      this.gamePlay.deselectCell(index);
+    }
   }
 
   getCharInPosition(index) {
@@ -133,7 +148,20 @@ export default class GameController {
     return positionedChar === undefined ? null : positionedChar.character;
   }
 
-  isUserPlayer(character) {
+  isUserCharacter(character) {
     return this.userPlayerTypes.reduce((result, item) => result || (character instanceof item), false);
+  }
+
+  setTooltipOnCharacter(index, character) {
+    const {
+      level, attack, defence, health,
+    } = character;
+    const tooltip = `\u{1F396}${level} \u{2694}${attack} \u{1F6E1}${defence} \u{2764}${health}`;
+
+    this.gamePlay.showCellTooltip(tooltip, index);
+  }
+
+  hideTooltipOnCharacter(index) {
+    this.gamePlay.hideCellTooltip(index);
   }
 }

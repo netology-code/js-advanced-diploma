@@ -19,6 +19,7 @@ export default class Character {
     this.defence = 0;
     this.health = 50;
     this.type = type;
+    // this.isSelected = false; // Уточнить необходимость
 
     if (new.target.name === 'Character') {
       throw new Error('use "new Character()" denied');
