@@ -1,4 +1,6 @@
 import { generateTeam, randomFromRange } from './generators';
+import GamePlay from './GamePlay';
+import GameState from './GameState';
 import themes from './themes';
 import PositionedCharacter from './PositionedCharacter';
 import {
@@ -15,6 +17,7 @@ export default class GameController {
   }
 
   init() {
+    this.gameState = new GameState();
     this.gamePlay.drawUi(themes.prairie);
 
     // TODO: add event listeners to gamePlay events
@@ -41,6 +44,7 @@ export default class GameController {
   registerEventListeners() {
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
     this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+    this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
   }
 
   placeUserTeamOnBoard() {
@@ -92,7 +96,19 @@ export default class GameController {
   }
 
   onCellClick(index) {
-    // TODO: react to click
+    const character = this.getCharInPosition(index);
+    if (!character) {
+      return;
+    }
+    if (!this.isUserPlayer(character)) {
+      GamePlay.showError('Это не ваш персонаж!');
+      return;
+    }
+    if (this.gameState.selectedIndex) {
+      this.gamePlay.deselectCell(this.gameState.selectedIndex);
+    }
+    this.gameState.selectedIndex = index;
+    this.gamePlay.selectCell(index);
   }
 
   onCellEnter(index) {
@@ -108,7 +124,6 @@ export default class GameController {
   }
 
   onCellLeave(index) {
-    // TODO: react to mouse leave
     this.gamePlay.hideCellTooltip(index);
   }
 
@@ -116,5 +131,9 @@ export default class GameController {
     const positionedChar = this.positionedCharacters.find(o => o.position === index);
 
     return positionedChar === undefined ? null : positionedChar.character;
+  }
+
+  isUserPlayer(character) {
+    return this.userPlayerTypes.reduce((result, item) => result || (character instanceof item), false);
   }
 }
