@@ -99,35 +99,58 @@ export default class GameController {
   onCellClick(index) {
     const character = this.getCharInPosition(index);
 
-    if (!character) {
+    if (!((character && this.isUserCharacter(character)) || this.gameState.selected.character)) {
+      console.log('do nothing');
       return;
     }
+    if (this.gameState.selected.character) {
+      this.gamePlay.deselectCell(this.gameState.selected.index);
+    }
+    this.gameState.selected.character = character;
+    this.gameState.selected.index = index;
+    // this.gameState.isCharacterSelected = true;
+    this.gamePlay.selectCell(index);
+
     if (!this.isUserCharacter(character)) {
       GamePlay.showError('Это не ваш персонаж!');
       return;
     }
-    if (this.gameState.selectedIndex) {
-      this.gamePlay.deselectCell(this.gameState.selectedIndex);
-      // this.getCharInPosition(this.gameState.selectedIndex).isSelected = false; // utochnit
-    }
-    this.gameState.selectedIndex = index;
-    // character.isSelected = true; // utochnit
-    this.gameState.isCharacterSelected = true;
-    this.gamePlay.selectCell(index);
+    // if (this.gameState.selectedIndex) {
+    //   this.gamePlay.deselectCell(this.gameState.selectedIndex);
+    //   // this.getCharInPosition(this.gameState.selectedIndex).isSelected = false; // utochnit
+    // }
+    // this.gameState.selectedIndex = index;
+    // // character.isSelected = true; // utochnit
+    // this.gameState.isCharacterSelected = true;
+    // this.gamePlay.selectCell(index);
   }
 
   onCellEnter(index) {
     const character = this.getCharInPosition(index);
 
     if (character) {
-      this.setTooltipOnCharacter(index, character);
+      this.setTooltipOnCharacter(index);
     }
     if (this.isUserCharacter(character)) {
       this.gamePlay.setCursor(cursors.pointer);
+      return;
     }
-    if (character && !this.isUserCharacter(character)) {
-      this.gamePlay.setCursor(cursors.crosshair);
-      this.gamePlay.selectCell(index, 'red');
+
+    if (character && !this.isUserCharacter(character) && this.gameState.selected.character) {
+      if (this.isValidAttackArea(index)) {
+        this.gamePlay.setCursor(cursors.crosshair);
+        this.gamePlay.selectCell(index, 'red');
+      } else {
+        this.gamePlay.setCursor(cursors.notallowed);
+      }
+    }
+
+    if (!character && this.gameState.selected.character) {
+      if (this.isValidMoveArea(index)) {
+        this.gamePlay.selectCell(index, 'green');
+      } else {
+        this.gamePlay.setCursor(cursors.notallowed);
+      }
     }
   }
 
@@ -136,8 +159,7 @@ export default class GameController {
 
     this.hideTooltipOnCharacter(index);
     this.gamePlay.setCursor(cursors.auto);
-
-    if (character && !this.isUserCharacter(character)) {
+    if (!this.isUserCharacter(character)) {
       this.gamePlay.deselectCell(index);
     }
   }
@@ -152,10 +174,10 @@ export default class GameController {
     return this.userPlayerTypes.reduce((result, item) => result || (character instanceof item), false);
   }
 
-  setTooltipOnCharacter(index, character) {
+  setTooltipOnCharacter(index) {
     const {
       level, attack, defence, health,
-    } = character;
+    } = this.getCharInPosition(index);
     const tooltip = `\u{1F396}${level} \u{2694}${attack} \u{1F6E1}${defence} \u{2764}${health}`;
 
     this.gamePlay.showCellTooltip(tooltip, index);
@@ -163,5 +185,13 @@ export default class GameController {
 
   hideTooltipOnCharacter(index) {
     this.gamePlay.hideCellTooltip(index);
+  }
+
+  isValidAttackArea(index) {
+    return true;
+  }
+
+  isValidMoveArea(index) {
+    return true;
   }
 }

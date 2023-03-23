@@ -1,8 +1,11 @@
 export default class GameState {
   constructor() {
     this.isActivePlayerUser = true;
-    this.isCharacterSelected = false;
-    this.selectedIndex = null;
+    // this.isCharacterSelected = false;
+    this.selected = {
+      index: null,
+      character: null,
+    };
   }
 
   static from(object) {
