@@ -99,30 +99,28 @@ export default class GameController {
   onCellClick(index) {
     const character = this.getCharInPosition(index);
 
-    if (!((character && this.isUserCharacter(character)) || this.gameState.selected.character)) {
-      console.log('do nothing');
-      return;
-    }
-    if (this.gameState.selected.character) {
-      this.gamePlay.deselectCell(this.gameState.selected.index);
-    }
-    this.gameState.selected.character = character;
-    this.gameState.selected.index = index;
-    // this.gameState.isCharacterSelected = true;
-    this.gamePlay.selectCell(index);
-
-    if (!this.isUserCharacter(character)) {
+    if (!this.gameState.selected.character && character) {
+      if (this.isUserCharacter(character)) {
+        this.gameState.selected.character = character;
+        this.gameState.selected.index = index;
+        this.gamePlay.selectCell(index);
+        return;
+      }
       GamePlay.showError('Это не ваш персонаж!');
       return;
     }
-    // if (this.gameState.selectedIndex) {
-    //   this.gamePlay.deselectCell(this.gameState.selectedIndex);
-    //   // this.getCharInPosition(this.gameState.selectedIndex).isSelected = false; // utochnit
-    // }
-    // this.gameState.selectedIndex = index;
-    // // character.isSelected = true; // utochnit
-    // this.gameState.isCharacterSelected = true;
-    // this.gamePlay.selectCell(index);
+    if (this.gameState.selected.character && this.isUserCharacter(character)) {
+      this.gamePlay.deselectCell(this.gameState.selected.index);
+      this.gameState.selected.character = character;
+      this.gameState.selected.index = index;
+      this.gamePlay.selectCell(index);
+    }
+    if (this.gameState.selected.character && character && !this.isUserCharacter(character)) {
+      console.log('click on enemy');
+    }
+    if (this.gameState.selected.character && !character) {
+      console.log('click on empty space');
+    }
   }
 
   onCellEnter(index) {
@@ -140,16 +138,20 @@ export default class GameController {
       if (this.isValidAttackArea(index)) {
         this.gamePlay.setCursor(cursors.crosshair);
         this.gamePlay.selectCell(index, 'red');
+        this.gameState.isAttackValid = true;
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
+        this.gameState.isAttackValid = false;
       }
     }
 
     if (!character && this.gameState.selected.character) {
       if (this.isValidMoveArea(index)) {
         this.gamePlay.selectCell(index, 'green');
+        this.gameState.isMoveValid = true;
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
+        this.gameState.isMoveValid = false;
       }
     }
   }

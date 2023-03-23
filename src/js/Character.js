@@ -19,6 +19,8 @@ export default class Character {
     this.defence = 0;
     this.health = 50;
     this.type = type;
+    this.attackRange = 0;
+    this.moveRange = 0;
     // this.isSelected = false; // Уточнить необходимость
 
     if (new.target.name === 'Character') {
