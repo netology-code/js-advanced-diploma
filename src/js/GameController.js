@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 import { generateTeam, randomFromRange } from './generators';
 import GamePlay from './GamePlay';
 import GameState from './GameState';
@@ -98,7 +99,7 @@ export default class GameController {
 
   onCellClick(index) {
     const character = this.getCharInPosition(index);
-
+    console.log('attack:', this.gameState.isAttackValid, '  move:', this.gameState.isMoveValid);
     if (!this.gameState.selected.character && character) {
       if (this.isUserCharacter(character)) {
         this.gameState.selected.character = character;
@@ -114,12 +115,19 @@ export default class GameController {
       this.gameState.selected.character = character;
       this.gameState.selected.index = index;
       this.gamePlay.selectCell(index);
+      return;
     }
-    if (this.gameState.selected.character && character && !this.isUserCharacter(character)) {
-      console.log('click on enemy');
+    if (!(this.gameState.isAttackValid || this.gameState.isMoveValid)) {
+      GamePlay.showError('Не допустимое действие!');
+      return;
     }
-    if (this.gameState.selected.character && !character) {
-      console.log('click on empty space');
+    if (this.gameState.isMoveValid) {
+      console.log('click on move space');
+      return;
+    }
+    if (this.gameState.isAttackValid) {
+      console.log('attack enemy');
+      return;
     }
   }
 
@@ -129,6 +137,7 @@ export default class GameController {
     if (character) {
       this.setTooltipOnCharacter(index);
     }
+
     if (this.isUserCharacter(character)) {
       this.gamePlay.setCursor(cursors.pointer);
       return;
@@ -141,19 +150,29 @@ export default class GameController {
         this.gameState.isAttackValid = true;
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
-        this.gameState.isAttackValid = false;
+        // this.gameState.isAttackValid = false;
       }
+      return;
+    }
+
+    if (character && !this.isUserCharacter(character) && !this.gameState.selected.character) {
+      this.gamePlay.setCursor(cursors.notallowed);
+      return;
     }
 
     if (!character && this.gameState.selected.character) {
       if (this.isValidMoveArea(index)) {
+        this.gamePlay.setCursor(cursors.pointer);
         this.gamePlay.selectCell(index, 'green');
         this.gameState.isMoveValid = true;
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
-        this.gameState.isMoveValid = false;
+        // this.gameState.isMoveValid = false;
       }
+      return;
     }
+
+    this.gamePlay.setCursor(cursors.notallowed);
   }
 
   onCellLeave(index) {
@@ -161,6 +180,8 @@ export default class GameController {
 
     this.hideTooltipOnCharacter(index);
     this.gamePlay.setCursor(cursors.auto);
+    this.gameState.isAttackValid = false;
+    this.gameState.isMoveValid = false;
     if (!this.isUserCharacter(character)) {
       this.gamePlay.deselectCell(index);
     }
@@ -190,10 +211,28 @@ export default class GameController {
   }
 
   isValidAttackArea(index) {
-    return true;
+    const radius = this.gameState.selected.character.attackRange;
+    console.log(radius);
+    return this.isValidArea(index, radius);
   }
 
   isValidMoveArea(index) {
-    return true;
+    const radius = this.gameState.selected.character.moveRange;
+
+    return this.isValidArea(index, radius);
+  }
+
+  isValidArea(index, radius) {
+    const [xTarget, yTarget] = this.getXY(index);
+    const [xChar, yChar] = this.getXY(this.gameState.selected.index);
+
+    return xTarget >= xChar - radius && xTarget <= xChar + radius
+      && yTarget >= yChar - radius && yTarget <= yChar + radius;
+  }
+
+  getXY(index) {
+    const x = index % 8;
+    const y = Math.floor(index / 8);
+    return [x, y];
   }
 }
