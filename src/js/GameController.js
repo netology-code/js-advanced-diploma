@@ -3,11 +3,11 @@ import { generateTeam, randomFromRange } from './generators';
 import GamePlay from './GamePlay';
 import GameState from './GameState';
 import themes from './themes';
+import cursors from './cursors';
 import PositionedCharacter from './PositionedCharacter';
 import {
   Bowman, Swordsman, Magician, Vampire, Undead, Daemon,
 } from './Characters/Characters';
-import cursors from './cursors';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -98,8 +98,8 @@ export default class GameController {
   }
 
   onCellClick(index) {
-    const character = this.getCharInPosition(index);
-    console.log('attack:', this.gameState.isAttackValid, '  move:', this.gameState.isMoveValid);
+    const character = this.getCharInPositionByIndex(index);
+
     if (!this.gameState.selected.character && character) {
       if (this.isUserCharacter(character)) {
         this.gameState.selected.character = character;
@@ -122,7 +122,7 @@ export default class GameController {
       return;
     }
     if (this.gameState.isMoveValid) {
-      console.log('click on move space');
+      this.moveUserCharacterToIndex(index);
       return;
     }
     if (this.gameState.isAttackValid) {
@@ -132,7 +132,7 @@ export default class GameController {
   }
 
   onCellEnter(index) {
-    const character = this.getCharInPosition(index);
+    const character = this.getCharInPositionByIndex(index);
 
     if (character) {
       this.setTooltipOnCharacter(index);
@@ -150,7 +150,6 @@ export default class GameController {
         this.gameState.isAttackValid = true;
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
-        // this.gameState.isAttackValid = false;
       }
       return;
     }
@@ -167,7 +166,6 @@ export default class GameController {
         this.gameState.isMoveValid = true;
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
-        // this.gameState.isMoveValid = false;
       }
       return;
     }
@@ -176,7 +174,7 @@ export default class GameController {
   }
 
   onCellLeave(index) {
-    const character = this.getCharInPosition(index);
+    const character = this.getCharInPositionByIndex(index);
 
     this.hideTooltipOnCharacter(index);
     this.gamePlay.setCursor(cursors.auto);
@@ -187,10 +185,16 @@ export default class GameController {
     }
   }
 
-  getCharInPosition(index) {
+  getCharInPositionByIndex(index) {
     const positionedChar = this.positionedCharacters.find(o => o.position === index);
 
     return positionedChar === undefined ? null : positionedChar.character;
+  }
+
+  getPositionedCharByChar(character) {
+    const positionedChar = this.positionedCharacters.find(o => o.character === character);
+
+    return positionedChar;
   }
 
   isUserCharacter(character) {
@@ -200,7 +204,7 @@ export default class GameController {
   setTooltipOnCharacter(index) {
     const {
       level, attack, defence, health,
-    } = this.getCharInPosition(index);
+    } = this.getCharInPositionByIndex(index);
     const tooltip = `\u{1F396}${level} \u{2694}${attack} \u{1F6E1}${defence} \u{2764}${health}`;
 
     this.gamePlay.showCellTooltip(tooltip, index);
@@ -212,17 +216,6 @@ export default class GameController {
 
   isValidAttackArea(index) {
     const radius = this.gameState.selected.character.attackRange;
-    console.log(radius);
-    return this.isValidArea(index, radius);
-  }
-
-  isValidMoveArea(index) {
-    const radius = this.gameState.selected.character.moveRange;
-
-    return this.isValidArea(index, radius);
-  }
-
-  isValidArea(index, radius) {
     const [xTarget, yTarget] = this.getXY(index);
     const [xChar, yChar] = this.getXY(this.gameState.selected.index);
 
@@ -230,9 +223,38 @@ export default class GameController {
       && yTarget >= yChar - radius && yTarget <= yChar + radius;
   }
 
+  isValidMoveArea(index) {
+    const radius = this.gameState.selected.character.moveRange;
+    const [xTarget, yTarget] = this.getXY(index);
+    const [xChar, yChar] = this.getXY(this.gameState.selected.index);
+
+    const horizontalCheck = yTarget === yChar && xTarget >= xChar - radius && xTarget <= xChar + radius;
+    const verticalCheck = xTarget === xChar && yTarget >= yChar - radius && yTarget <= yChar + radius;
+
+    // Diagonal check
+    for (let x = xChar - radius, y1 = yChar - radius, y2 = yChar + radius; x <= xChar + radius; x++, y1++, y2--) {
+      if ((xTarget === x && yTarget === y1) || (xTarget === x && yTarget === y2)) {
+        return true;
+      }
+    }
+
+    return horizontalCheck || verticalCheck;
+  }
+
   getXY(index) {
     const x = index % 8;
     const y = Math.floor(index / 8);
     return [x, y];
+  }
+
+  moveUserCharacterToIndex(index) {
+    const positionedChar = this.getPositionedCharByChar(this.gameState.selected.character);
+
+    positionedChar.position = index;
+    this.gamePlay.deselectCell(this.gameState.selected.index);
+    this.gamePlay.deselectCell(index);
+    this.gamePlay.redrawPositions(this.positionedCharacters);
+    this.gameState.selected.character = null;
+    this.gameState.selected.index = null;
   }
 }
