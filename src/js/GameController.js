@@ -127,6 +127,7 @@ export default class GameController {
     }
     if (this.gameState.isAttackValid) {
       console.log('attack enemy');
+      this.attackEnemyByIndex(index);
       return;
     }
   }
@@ -250,10 +251,31 @@ export default class GameController {
   moveUserCharacterToIndex(index) {
     const positionedChar = this.getPositionedCharByChar(this.gameState.selected.character);
 
-    positionedChar.position = index;
-    this.gamePlay.deselectCell(this.gameState.selected.index);
+    this.resetSelectedCharacter();
     this.gamePlay.deselectCell(index);
+    positionedChar.position = index;
     this.gamePlay.redrawPositions(this.positionedCharacters);
+    // next turn
+  }
+
+  attackEnemyByIndex(index) {
+    const attacker = this.gameState.selected.character;
+    const target = this.getCharInPositionByIndex(index);
+    const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
+
+    target.health = target.health - damage < 0 ? 0 : target.health - damage;
+
+    this.resetSelectedCharacter();
+    this.gamePlay.deselectCell(index);
+    this.gamePlay.showDamage(index, damage)
+      .then(() => {
+        this.gamePlay.redrawPositions(this.positionedCharacters);
+        // next turn
+      });
+  }
+
+  resetSelectedCharacter() {
+    this.gamePlay.deselectCell(this.gameState.selected.index);
     this.gameState.selected.character = null;
     this.gameState.selected.index = null;
   }
