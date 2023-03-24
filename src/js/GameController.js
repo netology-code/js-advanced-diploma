@@ -21,8 +21,8 @@ export default class GameController {
   init() {
     this.gameState = new GameState();
     this.gamePlay.drawUi(themes.prairie);
+    this.isEventsBlocked = true;
 
-    // TODO: add event listeners to gamePlay events
     this.registerEventListeners();
 
     // TODO: load saved stated from stateService
@@ -37,10 +37,8 @@ export default class GameController {
     this.placeUserTeamOnBoard();
     this.placeCompTeamOnBoard();
 
-    // reDrawPositions
     this.gamePlay.redrawPositions(this.positionedCharacters);
-
-    // console.log(this.positionedCharacters[0].character);
+    this.isEventsBlocked = false;
   }
 
   registerEventListeners() {
@@ -98,6 +96,9 @@ export default class GameController {
   }
 
   onCellClick(index) {
+    if (this.isEventsBlocked) {
+      return;
+    }
     const character = this.getCharInPositionByIndex(index);
 
     if (!this.gameState.selected.character && character) {
@@ -122,17 +123,28 @@ export default class GameController {
       return;
     }
     if (this.gameState.isMoveValid) {
-      this.moveUserCharacterToIndex(index);
-      return;
+      this.moveUserCharacterToIndex(index)
+        .then(this.enemyTurn)
+        .then(() => {
+          console.log('user turn');
+          this.isEventsBlocked = false;
+        });
     }
     if (this.gameState.isAttackValid) {
-      console.log('attack enemy');
-      this.attackEnemyByIndex(index);
-      return;
+      console.log('attacking enemy');
+      this.attackEnemyByIndex(index)
+        .then(this.enemyTurn)
+        .then(() => {
+          console.log('next turn');
+          this.isEventsBlocked = false;
+        });
     }
   }
 
   onCellEnter(index) {
+    if (this.isEventsBlocked) {
+      return;
+    }
     const character = this.getCharInPositionByIndex(index);
 
     if (character) {
@@ -175,6 +187,9 @@ export default class GameController {
   }
 
   onCellLeave(index) {
+    if (this.isEventsBlocked) {
+      return;
+    }
     const character = this.getCharInPositionByIndex(index);
 
     this.hideTooltipOnCharacter(index);
@@ -249,34 +264,49 @@ export default class GameController {
   }
 
   moveUserCharacterToIndex(index) {
-    const positionedChar = this.getPositionedCharByChar(this.gameState.selected.character);
+    return new Promise(resolve => {
+      this.isEventsBlocked = true;
+      this.gamePlay.setCursor(cursors.notallowed);
+      const positionedChar = this.getPositionedCharByChar(this.gameState.selected.character);
 
-    this.resetSelectedCharacter();
-    this.gamePlay.deselectCell(index);
-    positionedChar.position = index;
-    this.gamePlay.redrawPositions(this.positionedCharacters);
-    // next turn
+      this.resetSelectedCharacter();
+      this.gamePlay.deselectCell(index);
+      positionedChar.position = index;
+      this.gamePlay.redrawPositions(this.positionedCharacters);
+      resolve(); // next turn
+    });
   }
 
   attackEnemyByIndex(index) {
-    const attacker = this.gameState.selected.character;
-    const target = this.getCharInPositionByIndex(index);
-    const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
+    return new Promise(resolve => {
+      this.isEventsBlocked = true;
+      this.gamePlay.setCursor(cursors.notallowed);
+      const attacker = this.gameState.selected.character;
+      const target = this.getCharInPositionByIndex(index);
+      const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
 
-    target.health = target.health - damage < 0 ? 0 : target.health - damage;
+      target.health = target.health - damage < 0 ? 0 : target.health - damage;
 
-    this.resetSelectedCharacter();
-    this.gamePlay.deselectCell(index);
-    this.gamePlay.showDamage(index, damage)
-      .then(() => {
-        this.gamePlay.redrawPositions(this.positionedCharacters);
-        // next turn
-      });
+      this.resetSelectedCharacter();
+      this.gamePlay.deselectCell(index);
+      this.gamePlay.showDamage(index, damage)
+        .then(() => {
+          this.gamePlay.redrawPositions(this.positionedCharacters);
+          resolve(); // next turn
+        });
+    });
   }
 
   resetSelectedCharacter() {
     this.gamePlay.deselectCell(this.gameState.selected.index);
     this.gameState.selected.character = null;
     this.gameState.selected.index = null;
+  }
+
+  enemyTurn() {
+    return new Promise(resolve => {
+      console.log('enemy turn');
+      setTimeout(resolve, 2000);
+    });
   }
 }
