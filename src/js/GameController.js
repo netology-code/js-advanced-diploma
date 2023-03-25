@@ -1,3 +1,4 @@
+/* eslint-disable no-continue */
 /* eslint-disable class-methods-use-this */
 import { generateTeam, randomFromRange } from './generators';
 import GamePlay from './GamePlay';
@@ -124,20 +125,31 @@ export default class GameController {
     }
     if (this.gameState.isMoveValid) {
       this.moveUserCharacterToIndex(index)
-        .then(this.enemyTurn)
         .then(() => {
+          this.enemyTurn.call(this);
           console.log('user turn');
           this.isEventsBlocked = false;
         });
+        // .then(() => {
+        //   console.log('user turn');
+        //   this.isEventsBlocked = false;
+        // });
     }
     if (this.gameState.isAttackValid) {
       console.log('attacking enemy');
+
+      this.isEventsBlocked = true;
+      this.gamePlay.setCursor(cursors.notallowed);
       this.attackEnemyByIndex(index)
-        .then(this.enemyTurn)
         .then(() => {
-          console.log('next turn');
+          this.enemyTurn.call(this);
+          console.log('user turn');
           this.isEventsBlocked = false;
         });
+        // .then(() => {
+        //   console.log('next turn');
+        //   this.isEventsBlocked = false;
+        // });
     }
   }
 
@@ -207,10 +219,20 @@ export default class GameController {
     return positionedChar === undefined ? null : positionedChar.character;
   }
 
-  getPositionedCharByChar(character) {
+  getPositionedCharByChar(character) { // TO FIX !!!!
     const positionedChar = this.positionedCharacters.find(o => o.character === character);
 
     return positionedChar;
+  }
+
+  getPositionedCharByIndex(index) {
+    const positionedChar = this.positionedCharacters.find(o => o.position === index);
+
+    return positionedChar;
+  }
+
+  getIndexByChar(char) { // to fix
+    return this.getPositionedCharByChar(char).position;
   }
 
   isUserCharacter(character) {
@@ -232,8 +254,8 @@ export default class GameController {
 
   isValidAttackArea(index) {
     const radius = this.gameState.selected.character.attackRange;
-    const [xTarget, yTarget] = this.getXY(index);
-    const [xChar, yChar] = this.getXY(this.gameState.selected.index);
+    const [xTarget, yTarget] = this.getXYbyIndex(index);
+    const [xChar, yChar] = this.getXYbyIndex(this.gameState.selected.index);
 
     return xTarget >= xChar - radius && xTarget <= xChar + radius
       && yTarget >= yChar - radius && yTarget <= yChar + radius;
@@ -241,8 +263,8 @@ export default class GameController {
 
   isValidMoveArea(index) {
     const radius = this.gameState.selected.character.moveRange;
-    const [xTarget, yTarget] = this.getXY(index);
-    const [xChar, yChar] = this.getXY(this.gameState.selected.index);
+    const [xTarget, yTarget] = this.getXYbyIndex(index);
+    const [xChar, yChar] = this.getXYbyIndex(this.gameState.selected.index);
 
     const horizontalCheck = yTarget === yChar && xTarget >= xChar - radius && xTarget <= xChar + radius;
     const verticalCheck = xTarget === xChar && yTarget >= yChar - radius && yTarget <= yChar + radius;
@@ -257,17 +279,22 @@ export default class GameController {
     return horizontalCheck || verticalCheck;
   }
 
-  getXY(index) {
-    const x = index % 8;
-    const y = Math.floor(index / 8);
+  getXYbyIndex(index) {
+    const { boardSize } = this.gamePlay;
+    const x = index % boardSize;
+    const y = Math.floor(index / boardSize);
     return [x, y];
+  }
+
+  getIndexByXY(x, y) {
+    return y * 8 + x;
   }
 
   moveUserCharacterToIndex(index) {
     return new Promise(resolve => {
       this.isEventsBlocked = true;
       this.gamePlay.setCursor(cursors.notallowed);
-      const positionedChar = this.getPositionedCharByChar(this.gameState.selected.character);
+      const positionedChar = this.getPositionedCharByIndex(this.gameState.selected.index);
 
       this.resetSelectedCharacter();
       this.gamePlay.deselectCell(index);
@@ -279,8 +306,6 @@ export default class GameController {
 
   attackEnemyByIndex(index) {
     return new Promise(resolve => {
-      this.isEventsBlocked = true;
-      this.gamePlay.setCursor(cursors.notallowed);
       const attacker = this.gameState.selected.character;
       const target = this.getCharInPositionByIndex(index);
       const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
@@ -291,10 +316,50 @@ export default class GameController {
       this.gamePlay.deselectCell(index);
       this.gamePlay.showDamage(index, damage)
         .then(() => {
+          if (!target.health) {
+            console.log(target, ' is dead');
+            console.log(this.positionedCharacters);
+            this.removeCharFromPositionedChars(target);
+            this.compPlayerTeam.remove(target);
+            console.log(this.positionedCharacters);
+          }
           this.gamePlay.redrawPositions(this.positionedCharacters);
           resolve(); // next turn
         });
     });
+  }
+
+  attackUser(attacker, target) {
+    return new Promise(resolve => {
+      const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
+      const index = this.getIndexByChar(target);
+
+      // eslint-disable-next-line no-param-reassign
+      target.health = target.health - damage < 0 ? 0 : target.health - damage;
+
+      this.gamePlay.showDamage(index, damage)
+        .then(() => {
+          if (!target.health) {
+            console.log(target, ' is dead');
+            console.log(this.positionedCharacters);
+            this.removeCharFromPositionedChars(target);
+            this.userPlayerTeam.remove(target);
+            console.log(this.positionedCharacters);
+          }
+          this.gamePlay.redrawPositions(this.positionedCharacters);
+          resolve(); // next turn
+        });
+    });
+  }
+
+  isDead(char) {
+    return char.health <= 0;
+  }
+
+  removeCharFromPositionedChars(char) {
+    const index = this.positionedCharacters.findIndex(item => item.character === char);
+    // console.log(position, index);
+    this.positionedCharacters.splice(index, 1);
   }
 
   resetSelectedCharacter() {
@@ -306,7 +371,68 @@ export default class GameController {
   enemyTurn() {
     return new Promise(resolve => {
       console.log('enemy turn');
-      setTimeout(resolve, 2000);
+      this.doTurn();
+      // setTimeout(resolve, 1000);
+      this.isEventsBlocked = false;
+      resolve();
     });
+  }
+
+  doTurn() {
+    const rangedChars = this.rangeCharsByAttack([...this.compPlayerTeam.characters]);
+
+    for (const char of rangedChars) {
+      const targets = this.getTargetsInAdjacentCell(char);
+      if (!targets.length) {
+        continue;
+      }
+      const rangedTargets = this.rangeCharsByDefence(targets);
+      const target = rangedTargets[rangedTargets.length - 1];
+      console.log('attacking char: ', char);
+      console.log('target char: ', target);
+      this.attackUser(char, target)
+        .then(() => {
+          console.log('user turn');
+          this.isEventsBlocked = false;
+        });
+      return;
+    }
+    // console.log(this.compPlayerTeam.characters, rangedChars);
+  }
+
+  rangeCharsByAttackRange(rangedChars) {
+    rangedChars.sort((char1, char2) => char2.attackRange - char1.attackRange);
+    return rangedChars;
+  }
+
+  rangeCharsByAttack(rangedChars) {
+    rangedChars.sort((char1, char2) => char2.attack - char1.attack);
+    return rangedChars;
+  }
+
+  rangeCharsByDefence(rangedChars) {
+    rangedChars.sort((char1, char2) => char2.defence - char1.defence);
+    return rangedChars;
+  }
+
+  getTargetsInAdjacentCell(char) {
+    const { boardSize } = this.gamePlay;
+    const [x, y] = this.getXYbyIndex(this.getIndexByChar(char));
+    const targets = [];
+
+    for (let i = x - 1; i <= x + 1; i++) {
+      for (let j = y - 1; j <= y + 1; j++) {
+        if (i === boardSize || j === boardSize || i < 0 || j < 0 || (i === x && j === y)) {
+          continue;
+        }
+        const index = this.getIndexByXY(i, j);
+        const target = this.getCharInPositionByIndex(index);
+
+        if (target && this.isUserCharacter(target)) {
+          targets.push(target);
+        }
+      }
+    }
+    return targets;
   }
 }

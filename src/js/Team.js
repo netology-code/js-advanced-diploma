@@ -15,4 +15,11 @@ export default class Team {
   constructor(characters) {
     this.characters = [...characters];
   }
+
+  remove(character) {
+    const index = this.characters.indexOf(character);
+
+    this.characters.splice(index, 1);
+    console.log('remove: ', character, 'rest: ', this.characters);
+  }
 }
