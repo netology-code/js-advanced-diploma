@@ -379,17 +379,10 @@ export default class GameController {
   }
 
   doTurn() {
-    const rangedChars = this.rangeCharsByAttack([...this.compPlayerTeam.characters]);
+    const opponents = this.getCloseInFightOpponents() || this.getDistanceFightOpponent();
 
-    for (const char of rangedChars) {
-      const targets = this.getTargetsInAdjacentCell(char);
-      if (!targets.length) {
-        continue;
-      }
-      const rangedTargets = this.rangeCharsByDefence(targets);
-      const target = rangedTargets[rangedTargets.length - 1];
-      console.log('attacking char: ', char);
-      console.log('target char: ', target);
+    if (opponents) {
+      const { char, target } = opponents;
       this.attackUser(char, target)
         .then(() => {
           console.log('user turn');
@@ -397,32 +390,62 @@ export default class GameController {
         });
       return;
     }
-    // console.log(this.compPlayerTeam.characters, rangedChars);
+
+    this.compCharMove();
   }
 
-  rangeCharsByAttackRange(rangedChars) {
-    rangedChars.sort((char1, char2) => char2.attackRange - char1.attackRange);
-    return rangedChars;
+  getCloseInFightOpponents() {
+    const sortedChars = this.sortCharsBy([...this.compPlayerTeam.characters], 'attack');
+
+    for (const char of sortedChars) {
+      const targets = this.getTargetsInAdjacentCell(char, 1);
+      if (!targets.length) {
+        continue;
+      }
+      const sortedTargets = this.sortCharsBy(targets, 'defence');
+      const target = sortedTargets[sortedTargets.length - 1];
+      console.log('Close-In  -  attacking char: ', char, ' target char: ', target);
+
+      return { char, target };
+    }
+    return null;
   }
 
-  rangeCharsByAttack(rangedChars) {
-    rangedChars.sort((char1, char2) => char2.attack - char1.attack);
-    return rangedChars;
+  getDistanceFightOpponent() {
+    const sortedChars = this.sortCharsBy([...this.compPlayerTeam.characters], 'attackRange');
+
+    for (const char of sortedChars) {
+      const { attackRange } = char;
+      const targets = this.getTargetsInAdjacentCell(char, attackRange);
+      if (!targets.length) {
+        continue;
+      }
+      const sortedTargets = this.sortCharsBy(targets, 'defence');
+      const target = sortedTargets[sortedTargets.length - 1];
+      console.log('Distant  -  attacking char: ', char, ' target char: ', target);
+
+      return { char, target };
+    }
+    return null;
   }
 
-  rangeCharsByDefence(rangedChars) {
-    rangedChars.sort((char1, char2) => char2.defence - char1.defence);
-    return rangedChars;
+  compCharMove() {
+    console.log('Moving char: ');
   }
 
-  getTargetsInAdjacentCell(char) {
+  sortCharsBy(chars, sortBy) {
+    chars.sort((char1, char2) => char2[sortBy] - char1[sortBy]);
+    return chars;
+  }
+
+  getTargetsInAdjacentCell(char, radius) {
     const { boardSize } = this.gamePlay;
     const [x, y] = this.getXYbyIndex(this.getIndexByChar(char));
     const targets = [];
 
-    for (let i = x - 1; i <= x + 1; i++) {
-      for (let j = y - 1; j <= y + 1; j++) {
-        if (i === boardSize || j === boardSize || i < 0 || j < 0 || (i === x && j === y)) {
+    for (let i = x - radius; i <= x + radius; i++) {
+      for (let j = y - radius; j <= y + radius; j++) {
+        if (i >= boardSize || j >= boardSize || i < 0 || j < 0 || (i === x && j === y)) {
           continue;
         }
         const index = this.getIndexByXY(i, j);
