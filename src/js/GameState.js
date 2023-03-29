@@ -1,5 +1,6 @@
 export default class GameState {
   constructor() {
+    this.currentLevel = 1;
     this.isActivePlayerUser = true;
     // this.isCharacterSelected = false;
     this.selected = {

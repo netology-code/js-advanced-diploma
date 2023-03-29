@@ -1,3 +1,4 @@
+/* eslint-disable no-plusplus */
 /* eslint-disable no-continue */
 /* eslint-disable class-methods-use-this */
 import { generateTeam, randomFromRange } from './generators';
@@ -21,7 +22,7 @@ export default class GameController {
 
   init() {
     this.gameState = new GameState();
-    this.gamePlay.drawUi(themes.prairie);
+    this.gamePlay.drawUi(Array.from(themes)[0]);
     this.isEventsBlocked = true;
 
     this.registerEventListeners();
@@ -31,8 +32,8 @@ export default class GameController {
     this.positionedCharacters = [];
 
     // create team for player & computer
-    this.userPlayerTeam = generateTeam(this.userPlayerTypes, 1, this.gamePlay.initialCountOfChars);
-    this.compPlayerTeam = generateTeam(this.compPlayerTypes, 1, this.gamePlay.initialCountOfChars);
+    this.userPlayerTeam = generateTeam(this.userPlayerTypes, 1, this.gamePlay.initialNumberOfChars);
+    this.compPlayerTeam = generateTeam(this.compPlayerTypes, 1, this.gamePlay.initialNumberOfChars);
 
     // place characters on board
     this.placeUserTeamOnBoard();
@@ -49,7 +50,7 @@ export default class GameController {
   }
 
   placeUserTeamOnBoard() {
-    const positions = this.getInitialPositions('user');
+    const positions = this.getInitialPositions('user', this.userPlayerTeam.count);
 
     this.userPlayerTeam.characters.forEach((character, index) => {
       this.positionedCharacters.push(new PositionedCharacter(character, positions[index]));
@@ -57,17 +58,17 @@ export default class GameController {
   }
 
   placeCompTeamOnBoard() {
-    const positions = this.getInitialPositions('comp');
+    const positions = this.getInitialPositions('comp', this.compPlayerTeam.count);
 
     this.compPlayerTeam.characters.forEach((character, index) => {
       this.positionedCharacters.push(new PositionedCharacter(character, positions[index]));
     });
   }
 
-  getInitialPositions(playerType) {
+  getInitialPositions(playerType, count) {
     const positions = [];
     let counter = 0;
-    while (counter < this.gamePlay.initialCountOfChars) {
+    while (counter < count) {
       const position = playerType === 'user' ? this.getRandomUserCharPosition() : this.getRandomCompCharPosition();
 
       if (!positions.includes(position)) {
@@ -95,6 +96,8 @@ export default class GameController {
     }
     return (index - boardSize) * boardSize + 1 + shift;
   }
+
+  // cell event handlers
 
   onCellClick(index) {
     if (this.isEventsBlocked) {
@@ -124,32 +127,31 @@ export default class GameController {
       return;
     }
     if (this.gameState.isMoveValid) {
-      this.moveUserCharacterToIndex(index)
-        .then(() => {
-          this.enemyTurn.call(this);
-          console.log('user turn');
-          this.isEventsBlocked = false;
-        });
-        // .then(() => {
-        //   console.log('user turn');
-        //   this.isEventsBlocked = false;
-        // });
+      this.isEventsBlocked = true;
+      this.gamePlay.setCursor(cursors.notallowed);
+      this.moveUserCharacterToIndex(index);
+      this.enemyTurn.call(this);
+      console.log('user turn');
+      this.isEventsBlocked = false;
+      return;
     }
     if (this.gameState.isAttackValid) {
       console.log('attacking enemy');
 
       this.isEventsBlocked = true;
       this.gamePlay.setCursor(cursors.notallowed);
-      this.attackEnemyByIndex(index)
-        .then(() => {
-          this.enemyTurn.call(this);
-          console.log('user turn');
-          this.isEventsBlocked = false;
+      this.gamePlay.deselectCell(index);
+      this.attackHandler(this.gameState.selected.character, this.getCharInPositionByIndex(index))
+        .then(isNextLevel => {
+          this.resetSelectedCharacter();
+          if (isNextLevel) {
+            this.toNextLevel();
+          } else {
+            this.enemyTurn.call(this);
+            console.log('user turn', isNextLevel);
+            this.isEventsBlocked = false;
+          }
         });
-        // .then(() => {
-        //   console.log('next turn');
-        //   this.isEventsBlocked = false;
-        // });
     }
   }
 
@@ -291,45 +293,38 @@ export default class GameController {
   }
 
   moveUserCharacterToIndex(index) {
-    return new Promise(resolve => {
-      this.isEventsBlocked = true;
-      this.gamePlay.setCursor(cursors.notallowed);
-      const positionedChar = this.getPositionedCharByIndex(this.gameState.selected.index);
+    const positionedChar = this.getPositionedCharByIndex(this.gameState.selected.index);
 
-      this.resetSelectedCharacter();
-      this.gamePlay.deselectCell(index);
-      positionedChar.position = index;
-      this.gamePlay.redrawPositions(this.positionedCharacters);
-      resolve(); // next turn
-    });
+    this.resetSelectedCharacter();
+    this.gamePlay.deselectCell(index);
+    positionedChar.position = index;
+    this.gamePlay.redrawPositions(this.positionedCharacters);
   }
 
-  attackEnemyByIndex(index) {
-    return new Promise(resolve => {
-      const attacker = this.gameState.selected.character;
-      const target = this.getCharInPositionByIndex(index);
-      const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
+  // attackEnemyByIndex(index) {
+  //   return new Promise(resolve => {
+  //     const attacker = this.gameState.selected.character;
+  //     const target = this.getCharInPositionByIndex(index);
+  //     const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
 
-      target.health = target.health - damage < 0 ? 0 : target.health - damage;
+  //     target.health = target.health - damage < 0 ? 0 : target.health - damage;
 
-      this.resetSelectedCharacter();
-      this.gamePlay.deselectCell(index);
-      this.gamePlay.showDamage(index, damage)
-        .then(() => {
-          if (!target.health) {
-            console.log(target, ' is dead');
-            console.log(this.positionedCharacters);
-            this.removeCharFromPositionedChars(target);
-            this.compPlayerTeam.remove(target);
-            console.log(this.positionedCharacters);
-          }
-          this.gamePlay.redrawPositions(this.positionedCharacters);
-          resolve(); // next turn
-        });
-    });
-  }
+  //     this.gamePlay.showDamage(index, damage)
+  //       .then(() => {
+  //         if (target.isDead()) {
+  //           console.log(target, ' is dead');
+  //           console.log(this.positionedCharacters);
+  //           this.removeCharFromTeam(target);
 
-  attackUser(attacker, target) {
+  //           console.log(this.positionedCharacters);
+  //         }
+  //         this.gamePlay.redrawPositions(this.positionedCharacters);
+  //         resolve(); // next turn
+  //       });
+  //   });
+  // }
+
+  attackHandler(attacker, target) {
     return new Promise(resolve => {
       const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
       const index = this.getIndexByChar(target);
@@ -339,27 +334,26 @@ export default class GameController {
 
       this.gamePlay.showDamage(index, damage)
         .then(() => {
-          if (!target.health) {
+          if (target.isDead()) {
             console.log(target, ' is dead');
             console.log(this.positionedCharacters);
-            this.removeCharFromPositionedChars(target);
-            this.userPlayerTeam.remove(target);
+            this.removeCharFromTeam(target);
+
             console.log(this.positionedCharacters);
           }
           this.gamePlay.redrawPositions(this.positionedCharacters);
-          resolve(); // next turn
+          const isNextLevel = this.compPlayerTeam.isEmpty() || this.userPlayerTeam.isEmpty();
+          resolve(isNextLevel); // next turn
         });
     });
   }
 
-  isDead(char) {
-    return char.health <= 0;
-  }
-
-  removeCharFromPositionedChars(char) {
+  removeCharFromTeam(char) {
     const index = this.positionedCharacters.findIndex(item => item.character === char);
-    // console.log(position, index);
+
     this.positionedCharacters.splice(index, 1);
+    this.compPlayerTeam.remove(char);
+    this.userPlayerTeam.remove(char);
   }
 
   resetSelectedCharacter() {
@@ -383,10 +377,14 @@ export default class GameController {
 
     if (opponents) {
       const { char, target } = opponents;
-      this.attackUser(char, target)
-        .then(() => {
-          console.log('user turn');
-          this.isEventsBlocked = false;
+      this.attackHandler(char, target)
+        .then(isNextLevel => {
+          if (isNextLevel) {
+            this.toNextLevel();
+          } else {
+            console.log('user turn', isNextLevel);
+            this.isEventsBlocked = false;
+          }
         });
       return;
     }
@@ -457,5 +455,46 @@ export default class GameController {
       }
     }
     return targets;
+  }
+
+  toNextLevel() {
+    console.log('Going to next level');
+    this.isEventsBlocked = true;
+    if (this.gameState.currentLevel++ === 4) {
+      this.gameOver();
+      return;
+    }
+
+    for (const char of this.userPlayerTeam.characters) {
+      char.levelUp();
+    }
+    for (const char of this.compPlayerTeam.characters) {
+      char.levelUp();
+    }
+
+    this.positionedCharacters = [];
+
+    this.gamePlay.drawUi(Array.from(themes)[this.gameState.currentLevel - 1]);
+    this.addNewCharsToTeam(this.gameState.currentLevel - 1);
+    this.placeUserTeamOnBoard();
+    this.placeCompTeamOnBoard();
+    this.gamePlay.redrawPositions(this.positionedCharacters);
+
+    this.isEventsBlocked = false;
+  }
+
+  addNewCharsToTeam(count) {
+    const countOfNewUserChars = this.gamePlay.initialNumberOfChars + count - this.userPlayerTeam.count;
+    const countOfNewCompChars = this.gamePlay.initialNumberOfChars + count - this.compPlayerTeam.count;
+
+    const newUserPlayerChars = generateTeam(this.userPlayerTypes, 1, countOfNewUserChars).characters;
+    const newCompPlayerChars = generateTeam(this.compPlayerTypes, 1, countOfNewCompChars).characters;
+
+    this.userPlayerTeam.characters = this.userPlayerTeam.characters.concat(newUserPlayerChars);
+    this.compPlayerTeam.characters = this.compPlayerTeam.characters.concat(newCompPlayerChars);
+  }
+
+  gameOver() {
+    alert('game over');
   }
 }

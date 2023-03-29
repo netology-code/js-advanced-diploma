@@ -16,10 +16,21 @@ export default class Team {
     this.characters = [...characters];
   }
 
+  get count() {
+    return this.characters.length;
+  }
+
   remove(character) {
     const index = this.characters.indexOf(character);
 
+    if (index === -1) {
+      return null;
+    }
     this.characters.splice(index, 1);
     console.log('remove: ', character, 'rest: ', this.characters);
+  }
+
+  isEmpty() {
+    return !this.characters.length;
   }
 }
