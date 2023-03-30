@@ -159,7 +159,9 @@ export default class GameController {
     if (this.gameState.isMoveValid) {
       this.isEventsBlocked = true;
       this.gamePlay.setCursor(cursors.notallowed);
-      this.moveUserCharacterToIndex(index);
+      this.gamePlay.deselectCell(index);
+      this.moveCharacterToIndex(this.gameState.selected.character, index);
+      this.resetSelectedCharacter();
       this.enemyTurn();
       console.log('user turn');
       this.isEventsBlocked = false;
@@ -322,11 +324,9 @@ export default class GameController {
     return y * 8 + x;
   }
 
-  moveUserCharacterToIndex(index) {
-    const positionedChar = this.getPositionedCharByIndex(this.gameState.selected.index);
+  moveCharacterToIndex(char, index) {
+    const positionedChar = this.getPositionedCharByChar(char);
 
-    this.resetSelectedCharacter();
-    this.gamePlay.deselectCell(index);
     positionedChar.position = index;
     this.gamePlay.redrawPositions(this.gameState.positionedCharacters);
   }
@@ -400,7 +400,7 @@ export default class GameController {
     const sortedChars = this.sortCharsBy([...this.compPlayerTeam.characters], 'attack');
 
     for (const char of sortedChars) {
-      const targets = this.getTargetsInAdjacentCell(char, 1);
+      const targets = this.getAllTargetsInArea(char, 1);
       if (!targets.length) {
         continue;
       }
@@ -418,7 +418,7 @@ export default class GameController {
 
     for (const char of sortedChars) {
       const { attackRange } = char;
-      const targets = this.getTargetsInAdjacentCell(char, attackRange);
+      const targets = this.getAllTargetsInArea(char, attackRange);
       if (!targets.length) {
         continue;
       }
@@ -433,6 +433,23 @@ export default class GameController {
 
   compCharMove() {
     console.log('Moving char: ');
+    const char = this.sortCharsBy([...this.compPlayerTeam.characters], 'moveRange')[0];
+    const targets = this.getClosestTargetsInArea(char);
+    const target = this.sortCharsBy(targets, 'moveRange')[0];
+    const maxRange = char.moveRange;
+
+    const [xC, yC] = this.getXYbyIndex(this.getIndexByChar(char));
+    const [xT, yT] = this.getXYbyIndex(this.getIndexByChar(target));
+
+    console.log((xT - xC), (yT - yC));
+    const angle = Math.atan2(xT - xC, yT - yC);
+    const roundedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+    console.log(target, angle * (180 / Math.PI), roundedAngle * (180 / Math.PI));
+    const x = Math.round(Math.sin(roundedAngle) * maxRange);
+    const y = Math.round(Math.cos(roundedAngle) * maxRange);
+    console.log(x, y);
+    const index = this.getIndexByXY(xC + x, yC + y);
+    this.moveCharacterToIndex(char, index);
   }
 
   sortCharsBy(chars, sortBy) {
@@ -440,7 +457,7 @@ export default class GameController {
     return chars;
   }
 
-  getTargetsInAdjacentCell(char, radius) {
+  getAllTargetsInArea(char, radius) {
     const { boardSize } = this.gamePlay;
     const [x, y] = this.getXYbyIndex(this.getIndexByChar(char));
     const targets = [];
@@ -459,6 +476,20 @@ export default class GameController {
       }
     }
     return targets;
+  }
+
+  getClosestTargetsInArea(char) {
+    const { boardSize } = this.gamePlay;
+    const [x, y] = this.getXYbyIndex(this.getIndexByChar(char));
+    const radius = Math.max(x, y, boardSize - x - 1, boardSize - y - 1);
+
+    for (let r = 2; r <= radius; r++) {
+      const targets = this.getAllTargetsInArea(char, r);
+      if (targets.length) {
+        return targets;
+      }
+    }
+    return null;
   }
 
   toNextLevel() {
