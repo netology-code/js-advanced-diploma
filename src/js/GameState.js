@@ -1,8 +1,7 @@
 export default class GameState {
   constructor() {
     this.currentLevel = 1;
-    this.isActivePlayerUser = true;
-    // this.isCharacterSelected = false;
+    this.positionedCharacters = [];
     this.selected = {
       index: null,
       character: null,
@@ -13,6 +12,20 @@ export default class GameState {
 
   static from(object) {
     // TODO: create object
-    return null;
+    const state = {};
+
+    for (const prop in object) {
+      if (Object.hasOwn(object, prop)) {
+        state[prop] = object[prop];
+      }
+    }
+    return state;
+  }
+
+  setState(state) {
+    // eslint-disable-next-line guard-for-in
+    for (const prop in state) {
+      this[prop] = state[prop];
+    }
   }
 }
