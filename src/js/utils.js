@@ -61,3 +61,9 @@ export function calcHealthLevel(health) {
 
   return 'high';
 }
+
+export function randomFromRange(from, to) {
+  const rangeLength = to - from + 1;
+
+  return Math.floor(Math.random() * rangeLength) + from;
+}

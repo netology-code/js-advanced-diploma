@@ -1,10 +1,15 @@
 /* eslint-disable no-alert */
 import { calcHealthLevel, calcTileType } from './utils';
+import {
+  Bowman, Swordsman, Magician, Vampire, Undead, Daemon,
+} from './Characters/Characters';
 
 export default class GamePlay {
   constructor() {
     this.boardSize = 8;
     this.initialNumberOfChars = 2;
+    this.userPlayerTypes = [Bowman, Swordsman, Magician];
+    this.compPlayerTypes = [Vampire, Undead, Daemon];
     this.container = null;
     this.boardEl = null;
     this.cells = [];

@@ -1,3 +1,7 @@
+// import {
+//   Bowman, Swordsman, Magician, Vampire, Undead, Daemon,
+// } from './Characters/Characters';
+
 export default class GameState {
   constructor() {
     this.currentLevel = 1;
@@ -6,8 +10,7 @@ export default class GameState {
       index: null,
       character: null,
     };
-    this.isMoveValid = false;
-    this.isAttackValid = false;
+
     this.score = 0;
   }
 
@@ -25,8 +28,12 @@ export default class GameState {
 
   setState(state) {
     // eslint-disable-next-line guard-for-in
-    for (const prop in state) {
-      this[prop] = state[prop];
-    }
+    // for (const prop in state) {
+    //   this[prop] = state[prop];
+    // }
+    this.currentLevel = state.currentLevel;
+    this.isMoveValid = state.isMoveValid;
+    this.isAttackValid = state.isAttackValid;
+    this.score = state.score;
   }
 }

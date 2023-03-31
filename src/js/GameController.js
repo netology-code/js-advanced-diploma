@@ -2,10 +2,12 @@
 /* eslint-disable no-plusplus */
 /* eslint-disable no-continue */
 /* eslint-disable class-methods-use-this */
-import { generateTeam, randomFromRange } from './generators';
+import { randomFromRange } from './utils';
 import GamePlay from './GamePlay';
 import GameState from './GameState';
 import GameStateService from './GameStateService';
+import Team from './Team';
+import characterGenerator from './generators';
 import themes from './themes';
 import cursors from './cursors';
 import PositionedCharacter from './PositionedCharacter';
@@ -34,34 +36,44 @@ export default class GameController {
   }
 
   init() {
+    this.isEventsBlocked = true;
+    this.isMoveValid = false;
+    this.isAttackValid = false;
     this.gameState = new GameState();
     this.gamePlay.drawUi(Array.from(themes)[0]);
-    this.isEventsBlocked = true;
 
     // TODO: load saved stated from stateService
 
     // create team for player & computer
-    this.userPlayerTeam = generateTeam(this.userPlayerTypes, 1, this.gamePlay.initialNumberOfChars);
-    this.compPlayerTeam = generateTeam(this.compPlayerTypes, 1, this.gamePlay.initialNumberOfChars);
+    this.userPlayerTeam = new Team(this.userPlayerTypes, 1, this.gamePlay.initialNumberOfChars, characterGenerator);
+    this.compPlayerTeam = new Team(this.compPlayerTypes, 1, this.gamePlay.initialNumberOfChars, characterGenerator);
 
     // place characters on board
     this.placeUserTeamOnBoard();
     this.placeCompTeamOnBoard();
-
+    console.log(this.gameState.positionedCharacters);
     this.gamePlay.redrawPositions(this.gameState.positionedCharacters);
     this.isEventsBlocked = false;
   }
 
-  placeUserTeamOnBoard() {
-    const positions = this.getInitialPositions('user', this.userPlayerTeam.count);
+  placeUserTeamOnBoard(charPositions) {
+    let positions = charPositions;
+
+    if (!positions) {
+      positions = this.getInitialPositions('user', this.userPlayerTeam.count);
+    }
 
     this.userPlayerTeam.characters.forEach((character, index) => {
       this.gameState.positionedCharacters.push(new PositionedCharacter(character, positions[index]));
     });
   }
 
-  placeCompTeamOnBoard() {
-    const positions = this.getInitialPositions('comp', this.compPlayerTeam.count);
+  placeCompTeamOnBoard(charPositions) {
+    let positions = charPositions;
+
+    if (!positions) {
+      positions = this.getInitialPositions('comp', this.compPlayerTeam.count);
+    }
 
     this.compPlayerTeam.characters.forEach((character, index) => {
       this.gameState.positionedCharacters.push(new PositionedCharacter(character, positions[index]));
@@ -113,7 +125,7 @@ export default class GameController {
   onLoadGame() {
     const state = this.gameStateService.load();
     this.gameState.setState(state);
-    console.log('load', state);
+    console.log('load', state, this.gameState);
     this.gamePlay.drawUi(Array.from(themes)[this.gameState.currentLevel - 1]);
     this.gamePlay.redrawPositions(this.gameState.positionedCharacters);
     this.gamePlay.renderScore(this.gameState.score);
@@ -144,6 +156,7 @@ export default class GameController {
         this.gameState.selected.character = character;
         this.gameState.selected.index = index;
         this.gamePlay.selectCell(index);
+        console.log(this.gameState.selected);
         return;
       }
       GamePlay.showError('Это не ваш персонаж!');
@@ -156,11 +169,11 @@ export default class GameController {
       this.gamePlay.selectCell(index);
       return;
     }
-    if (!(this.gameState.isAttackValid || this.gameState.isMoveValid)) {
+    if (!(this.isAttackValid || this.isMoveValid)) {
       GamePlay.showError('Не допустимое действие!');
       return;
     }
-    if (this.gameState.isMoveValid) {
+    if (this.isMoveValid) {
       this.isEventsBlocked = true;
       this.gamePlay.setCursor(cursors.notallowed);
       this.gamePlay.deselectCell(index);
@@ -171,7 +184,7 @@ export default class GameController {
       this.isEventsBlocked = false;
       return;
     }
-    if (this.gameState.isAttackValid) {
+    if (this.isAttackValid) {
       console.log('attacking enemy');
       this.isEventsBlocked = true;
       this.gamePlay.setCursor(cursors.notallowed);
@@ -209,7 +222,7 @@ export default class GameController {
       if (this.isValidAttackArea(index)) {
         this.gamePlay.setCursor(cursors.crosshair);
         this.gamePlay.selectCell(index, 'red');
-        this.gameState.isAttackValid = true;
+        this.isAttackValid = true;
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
       }
@@ -225,7 +238,7 @@ export default class GameController {
       if (this.isValidMoveArea(index)) {
         this.gamePlay.setCursor(cursors.pointer);
         this.gamePlay.selectCell(index, 'green');
-        this.gameState.isMoveValid = true;
+        this.isMoveValid = true;
       } else {
         this.gamePlay.setCursor(cursors.notallowed);
       }
@@ -243,8 +256,8 @@ export default class GameController {
 
     this.hideTooltipOnCharacter(index);
     this.gamePlay.setCursor(cursors.auto);
-    this.gameState.isAttackValid = false;
-    this.gameState.isMoveValid = false;
+    this.isAttackValid = false;
+    this.isMoveValid = false;
     if (!this.isUserCharacter(character)) {
       this.gamePlay.deselectCell(index);
     }
@@ -273,7 +286,8 @@ export default class GameController {
   }
 
   isUserCharacter(character) {
-    return this.userPlayerTypes.reduce((result, item) => result || (character instanceof item), false);
+    return this.userPlayerTeam.isOwnCharacter(character);
+    // return this.userPlayerTypes.reduce((result, item) => result || (character instanceof item), false);
   }
 
   setTooltipOnCharacter(index) {
@@ -450,13 +464,12 @@ export default class GameController {
     const [xC, yC] = this.getXYbyIndex(this.getIndexByChar(char));
     const [xT, yT] = this.getXYbyIndex(this.getIndexByChar(target));
 
-    console.log((xT - xC), (yT - yC));
     const angle = Math.atan2(xT - xC, yT - yC);
     const roundedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
     console.log(target, angle * (180 / Math.PI), roundedAngle * (180 / Math.PI));
     const x = Math.round(Math.sin(roundedAngle) * maxRange);
     const y = Math.round(Math.cos(roundedAngle) * maxRange);
-    console.log(x, y);
+    console.log(xC + x, yC + y);
     const index = this.getIndexByXY(xC + x, yC + y);
     this.moveCharacterToIndex(char, index);
   }
@@ -530,11 +543,8 @@ export default class GameController {
     const countOfNewUserChars = this.gamePlay.initialNumberOfChars + count - this.userPlayerTeam.count;
     const countOfNewCompChars = this.gamePlay.initialNumberOfChars + count - this.compPlayerTeam.count;
 
-    const newUserPlayerChars = generateTeam(this.userPlayerTypes, 1, countOfNewUserChars).characters;
-    const newCompPlayerChars = generateTeam(this.compPlayerTypes, 1, countOfNewCompChars).characters;
-
-    this.userPlayerTeam.characters = this.userPlayerTeam.characters.concat(newUserPlayerChars);
-    this.compPlayerTeam.characters = this.compPlayerTeam.characters.concat(newCompPlayerChars);
+    this.userPlayerTeam.addRandomChar(1, countOfNewUserChars);
+    this.compPlayerTeam.addRandomChar(1, countOfNewCompChars);
   }
 
   gameOver() {

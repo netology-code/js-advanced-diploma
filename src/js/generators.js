@@ -1,10 +1,4 @@
-import Team from './Team';
-
-export function randomFromRange(from, to) {
-  const rangeLength = to - from + 1;
-
-  return Math.floor(Math.random() * rangeLength) + from;
-}
+import { randomFromRange } from './utils';
 
 /**
  * Формирует экземпляр персонажа из массива allowedTypes со
@@ -16,29 +10,11 @@ export function randomFromRange(from, to) {
  * возвращает новый экземпляр класса персонажа
  *
  */
-export function* characterGenerator(allowedTypes, maxLevel) {
+export default function* characterGenerator(allowedTypes, maxLevel) {
   while (true) {
     const level = randomFromRange(1, maxLevel);
     const index = randomFromRange(0, allowedTypes.length - 1);
 
     yield new allowedTypes[index](level);
   }
-}
-
-/**
- * Формирует массив персонажей на основе characterGenerator
- * @param allowedTypes массив классов
- * @param maxLevel максимальный возможный уровень персонажа
- * @param characterCount количество персонажей, которое нужно сформировать
- * @returns экземпляр Team, хранящий экземпляры персонажей. Количество персонажей в команде - characterCount
- * */
-export function generateTeam(allowedTypes, maxLevel, characterCount) {
-  const characters = [];
-  const playerGenerator = characterGenerator(allowedTypes, maxLevel);
-
-  for (let i = 0; i < characterCount; i++) {
-    characters.push(playerGenerator.next().value);
-  }
-
-  return new Team(characters);
 }
