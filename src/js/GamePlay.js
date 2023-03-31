@@ -36,6 +36,10 @@ export default class GamePlay {
         <button data-id="action-restart" class="btn">New Game</button>
         <button data-id="action-save" class="btn">Save Game</button>
         <button data-id="action-load" class="btn">Load Game</button>
+        <div class="score">
+          <span>Hit points</span>
+          <span class="score__value">0000</span>
+        </div>
       </div>
       <div class="board-container">
         <div data-id="board" class="board"></div>
@@ -45,6 +49,7 @@ export default class GamePlay {
     this.newGameEl = this.container.querySelector('[data-id=action-restart]');
     this.saveGameEl = this.container.querySelector('[data-id=action-save]');
     this.loadGameEl = this.container.querySelector('[data-id=action-load]');
+    this.scoreEl = this.container.querySelector('.score__value');
 
     this.newGameEl.addEventListener('click', event => this.onNewGameClick(event));
     this.saveGameEl.addEventListener('click', event => this.onSaveGameClick(event));
@@ -63,6 +68,12 @@ export default class GamePlay {
     }
 
     this.cells = Array.from(this.boardEl.children);
+  }
+
+  renderScore(value) {
+    const score = `${'0'.repeat(4 - value.toString().length)}${value}`;
+
+    this.scoreEl.textContent = score;
   }
 
   /**

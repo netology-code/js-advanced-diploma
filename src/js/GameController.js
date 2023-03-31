@@ -116,6 +116,10 @@ export default class GameController {
     console.log('load', state);
     this.gamePlay.drawUi(Array.from(themes)[this.gameState.currentLevel - 1]);
     this.gamePlay.redrawPositions(this.gameState.positionedCharacters);
+    this.gamePlay.renderScore(this.gameState.score);
+    if (this.gameState.selected.character) {
+      this.gamePlay.selectCell(this.gameState.selected.index);
+    }
     this.isEventsBlocked = false;
   }
 
@@ -338,6 +342,11 @@ export default class GameController {
 
       // eslint-disable-next-line no-param-reassign
       target.health = target.health - damage < 0 ? 0 : target.health - damage;
+
+      if (this.isUserCharacter(attacker)) {
+        this.gameState.score += damage;
+        this.gamePlay.renderScore(this.gameState.score);
+      }
 
       this.gamePlay.showDamage(index, damage)
         .then(() => {

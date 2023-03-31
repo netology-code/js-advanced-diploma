@@ -8,6 +8,7 @@ export default class GameState {
     };
     this.isMoveValid = false;
     this.isAttackValid = false;
+    this.score = 0;
   }
 
   static from(object) {

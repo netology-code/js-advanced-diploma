@@ -27,6 +27,21 @@ body {
   border: none;
 }
 
+.score {
+  display: inline-block;
+  font-weight: 400;
+  color: #212529;
+  background-color: #f8f9fa;
+  text-align: center;
+  vertical-align: middle;
+  margin-left: 1.0rem;
+  padding: .375rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-radius: .25rem;
+  border: none;
+}
+
 .controls {
   text-align: center;
   margin: 50px 0;
