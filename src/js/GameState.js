@@ -1,6 +1,7 @@
-// import {
-//   Bowman, Swordsman, Magician, Vampire, Undead, Daemon,
-// } from './Characters/Characters';
+import {
+  Bowman, Swordsman, Magician, Vampire, Undead, Daemon,
+} from './Characters/Characters';
+import PositionedCharacter from './PositionedCharacter';
 
 export default class GameState {
   constructor() {
@@ -15,7 +16,6 @@ export default class GameState {
   }
 
   static from(object) {
-    // TODO: create object
     const state = {};
 
     for (const prop in object) {
@@ -26,14 +26,33 @@ export default class GameState {
     return state;
   }
 
+  static createCharacterFromObject(obj) {
+    const charClasses = [
+      Bowman,
+      Swordsman,
+      Magician,
+      Vampire,
+      Undead,
+      Daemon,
+    ];
+    const CharClassName = charClasses.find(item => item.name.toLowerCase() === obj.type);
+    const charClass = new CharClassName();
+
+    for (const prop in obj) {
+      if (Object.hasOwn(obj, prop)) {
+        charClass[prop] = obj[prop];
+      }
+    }
+    return charClass;
+  }
+
   setState(state) {
-    // eslint-disable-next-line guard-for-in
-    // for (const prop in state) {
-    //   this[prop] = state[prop];
-    // }
     this.currentLevel = state.currentLevel;
-    this.isMoveValid = state.isMoveValid;
-    this.isAttackValid = state.isAttackValid;
     this.score = state.score;
+    this.positionedCharacters = [];
+    state.positionedCharacters.forEach(item => {
+      const char = GameState.createCharacterFromObject(item.character);
+      this.positionedCharacters.push(new PositionedCharacter(char, item.position));
+    });
   }
 }

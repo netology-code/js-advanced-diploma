@@ -42,11 +42,11 @@ export default class GameController {
     this.gameState = new GameState();
     this.gamePlay.drawUi(Array.from(themes)[0]);
 
-    // TODO: load saved stated from stateService
-
     // create team for player & computer
-    this.userPlayerTeam = new Team(this.userPlayerTypes, 1, this.gamePlay.initialNumberOfChars, characterGenerator);
-    this.compPlayerTeam = new Team(this.compPlayerTypes, 1, this.gamePlay.initialNumberOfChars, characterGenerator);
+    this.userPlayerTeam = new Team(this.userPlayerTypes, characterGenerator);
+    this.userPlayerTeam.addRandomChar(1, this.gamePlay.initialNumberOfChars);
+    this.compPlayerTeam = new Team(this.compPlayerTypes, characterGenerator);
+    this.compPlayerTeam.addRandomChar(1, this.gamePlay.initialNumberOfChars);
 
     // place characters on board
     this.placeUserTeamOnBoard();
@@ -118,20 +118,28 @@ export default class GameController {
     if (!confirm('Вы уверены что хотите начать новую игру?')) {
       return;
     }
-    console.log('new game');
     this.init();
   }
 
   onLoadGame() {
     const state = this.gameStateService.load();
+
     this.gameState.setState(state);
-    console.log('load', state, this.gameState);
+    this.userPlayerTeam = new Team(
+      this.userPlayerTypes,
+      characterGenerator,
+      this.getCharactersFromPositionedCaracters(),
+    );
+    this.compPlayerTeam = new Team(
+      this.compPlayerTypes,
+      characterGenerator,
+      this.getCharactersFromPositionedCaracters(),
+    );
+
     this.gamePlay.drawUi(Array.from(themes)[this.gameState.currentLevel - 1]);
     this.gamePlay.redrawPositions(this.gameState.positionedCharacters);
     this.gamePlay.renderScore(this.gameState.score);
-    if (this.gameState.selected.character) {
-      this.gamePlay.selectCell(this.gameState.selected.index);
-    }
+
     this.isEventsBlocked = false;
   }
 
@@ -139,7 +147,6 @@ export default class GameController {
     if (this.isEventsBlocked) {
       return;
     }
-    console.log('save');
     this.gameStateService.save(GameState.from(this.gameState));
   }
 
@@ -271,7 +278,7 @@ export default class GameController {
 
   getPositionedCharByChar(character) {
     const positionedChar = this.gameState.positionedCharacters.find(o => o.character === character);
-
+    console.log(character, this.gameState.positionedCharacters, positionedChar);
     return positionedChar;
   }
 
@@ -283,6 +290,10 @@ export default class GameController {
 
   getIndexByChar(char) { // to fix
     return this.getPositionedCharByChar(char).position;
+  }
+
+  getCharactersFromPositionedCaracters() {
+    return this.gameState.positionedCharacters.map(item => item.character);
   }
 
   isUserCharacter(character) {
@@ -459,17 +470,26 @@ export default class GameController {
     const char = this.sortCharsBy([...this.compPlayerTeam.characters], 'moveRange')[0];
     const targets = this.getClosestTargetsInArea(char);
     const target = this.sortCharsBy(targets, 'moveRange')[0];
-    const maxRange = char.moveRange;
-
+    const { boardSize } = this.gamePlay;
+    let maxRange = char.moveRange;
+    let x;
+    let y;
     const [xC, yC] = this.getXYbyIndex(this.getIndexByChar(char));
     const [xT, yT] = this.getXYbyIndex(this.getIndexByChar(target));
 
     const angle = Math.atan2(xT - xC, yT - yC);
     const roundedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
-    console.log(target, angle * (180 / Math.PI), roundedAngle * (180 / Math.PI));
-    const x = Math.round(Math.sin(roundedAngle) * maxRange);
-    const y = Math.round(Math.cos(roundedAngle) * maxRange);
-    console.log(xC + x, yC + y);
+
+    do {
+      x = Math.round(Math.sin(roundedAngle) * maxRange);
+      y = Math.round(Math.cos(roundedAngle) * maxRange);
+      maxRange -= 1;
+    } while (xC + x < 0
+      || yC + y < 0
+      || xC + x >= boardSize
+      || yC + y >= boardSize
+      || this.getCharInPositionByIndex(this.getIndexByXY(xC + x, yC + y)));
+
     const index = this.getIndexByXY(xC + x, yC + y);
     this.moveCharacterToIndex(char, index);
   }

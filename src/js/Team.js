@@ -9,22 +9,14 @@
  * team.characters // [swordsman, bowman]
  * ```
  * */
-// import { randomFromRange } from './utils';
 
 export default class Team {
-  // constructor(characters) {
-  //   this.characters = [...characters];
-  // }
-  constructor(allowedTypes, maxLevel, characterCount, generatorFunc) {
-    this.characters = [];
+  constructor(allowedTypes, generatorFunc, characters = []) {
     this.allowedTypes = allowedTypes;
     this.generatorFunc = generatorFunc;
-    const playerGenerator = this.generatorFunc(this.allowedTypes, maxLevel);
-
-    for (let i = 0; i < characterCount; i++) {
-      this.characters.push(playerGenerator.next().value);
-    }
-    console.log('generate Team', this.characters);
+    this.characters = characters.filter(char => this.allowedTypes.find(
+      allowedType => allowedType.name.toLowerCase() === char.type,
+    ));
   }
 
   get count() {
@@ -37,7 +29,6 @@ export default class Team {
     for (let i = 0; i < characterCount; i++) {
       this.characters.push(playerGenerator.next().value);
     }
-    console.log('add to Team', this.characters);
   }
 
   remove(character) {
@@ -47,6 +38,10 @@ export default class Team {
       return null;
     }
     return this.characters.splice(index, 1);
+  }
+
+  clear() {
+    this.characters = [];
   }
 
   isOwnCharacter(character) {

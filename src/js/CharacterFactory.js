@@ -2,14 +2,25 @@ import {
   Bowman, Swordsman, Magician, Vampire, Undead, Daemon,
 } from './Characters/Characters';
 
-class CharacterFactory {
-  constructor(charObject) {
-    this.level = charObject.level;
-    this.attack = charObject.attack;
-    this.defence = charObject.defence;
-    this.health = charObject.health;
-    this.type = charObject.type;
-    this.attackRange = charObject.attackRange;
-    this.moveRange = charObject.moveRange;
+export default class CharacterFactory {
+  static createFromObject(obj) {
+    const charClasses = [
+      Bowman,
+      Swordsman,
+      Magician,
+      Vampire,
+      Undead,
+      Daemon,
+    ];
+    const CharClassName = charClasses.find(item => item.name.toLowerCase() === obj.type);
+    const charClass = new CharClassName();
+    console.log('before', charClass);
+    for (const prop in obj) {
+      if (Object.hasOwn(obj, prop)) {
+        charClass[prop] = obj[prop];
+      }
+    }
+    console.log('after', charClass);
+    return charClass;
   }
 }
