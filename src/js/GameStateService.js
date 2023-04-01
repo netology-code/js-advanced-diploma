@@ -5,7 +5,6 @@ export default class GameStateService {
 
   save(state) {
     this.storage.setItem('state', JSON.stringify(state));
-    console.log(state);
   }
 
   load() {
@@ -13,6 +12,18 @@ export default class GameStateService {
       return JSON.parse(this.storage.getItem('state'));
     } catch (e) {
       throw new Error('Invalid state');
+    }
+  }
+
+  saveHiScore(hiScore) {
+    this.storage.setItem('hiscore', hiScore.toString());
+  }
+
+  loadHiScore() {
+    try {
+      return +this.storage.getItem('hiscore');
+    } catch (e) {
+      throw new Error('Invalid hiscore');
     }
   }
 }

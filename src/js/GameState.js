@@ -7,10 +7,11 @@ export default class GameState {
   constructor() {
     this.currentLevel = 1;
     this.positionedCharacters = [];
-    this.selected = {
-      index: null,
-      character: null,
-    };
+    this.selected = null;
+    // this.selected = {
+    //   index: null,
+    //   character: null,
+    // };
 
     this.score = 0;
   }

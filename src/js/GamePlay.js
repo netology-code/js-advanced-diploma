@@ -76,6 +76,9 @@ export default class GamePlay {
   }
 
   renderScore(value) {
+    if (value < 0) {
+      throw new Error('Score must be greater than 0');
+    }
     const score = `${'0'.repeat(4 - value.toString().length)}${value}`;
 
     this.scoreEl.textContent = score;
