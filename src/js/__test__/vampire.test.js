@@ -23,6 +23,8 @@ describe('Vampire', () => {
       level: 1,
       attack: 25,
       defence: 25,
+      attackRange: 2,
+      moveRange: 2,
     });
   });
 });

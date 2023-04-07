@@ -170,7 +170,6 @@ export default class GameController {
     }
     if (this.isMoveValid) { // движение персонажа игрока
       this.isEventsBlocked = true;
-      console.log('user move');
 
       this.gamePlay.setCursor(cursors.notallowed);
       this.deselectCharCells(index);
@@ -182,7 +181,6 @@ export default class GameController {
       return;
     }
     if (this.isAttackValid) { // атака персонажа компьютера игроком
-      console.log('attacking enemy');
       this.isEventsBlocked = true;
 
       this.gamePlay.setCursor(cursors.notallowed);
@@ -208,15 +206,15 @@ export default class GameController {
 
     const character = this.getCharInPositionByIndex(index);
 
-    if (character) {
+    if (character) { // указатель на каком-то персонаже
       this.setTooltipOnCharacter(index);
     }
 
-    if (this.userPlayerTeam.isOwnCharacter(character)) {
+    if (this.userPlayerTeam.isOwnCharacter(character)) { // указатель на персонаже игрока
       this.gamePlay.setCursor(cursors.pointer);
       return;
     }
-
+    // указатель на персонаже компьютера и есть выделенный персонаж игрока
     if (this.compPlayerTeam.isOwnCharacter(character) && this.gameState.selected) {
       if (this.isValidAttackArea(index)) {
         this.gamePlay.setCursor(cursors.crosshair);
@@ -228,7 +226,7 @@ export default class GameController {
       return;
     }
 
-    if (!character && this.gameState.selected) {
+    if (!character && this.gameState.selected) { // указатель на пустой клетке и есть выделенный персонаж игрока
       if (this.isValidMoveArea(index)) {
         this.gamePlay.setCursor(cursors.pointer);
         this.gamePlay.selectCell(index, 'green');
@@ -239,13 +237,14 @@ export default class GameController {
       return;
     }
 
-    this.gamePlay.setCursor(cursors.notallowed);
+    this.gamePlay.setCursor(cursors.notallowed); // все оставшиеся случаи
   }
 
   onCellLeave(index) {
     if (this.isEventsBlocked) {
       return;
     }
+
     const character = this.getCharInPositionByIndex(index);
 
     this.hideTooltipOnCharacter(index);
@@ -265,15 +264,15 @@ export default class GameController {
 
   getPositionedCharByChar(character) {
     const positionedChar = this.gameState.positionedCharacters.find(o => o.character === character);
-    console.log(character, this.gameState.positionedCharacters, positionedChar);
-    return positionedChar;
-  }
-
-  getPositionedCharByIndex(index) {
-    const positionedChar = this.gameState.positionedCharacters.find(o => o.position === index);
 
     return positionedChar;
   }
+
+  // getPositionedCharByIndex(index) {
+  //   const positionedChar = this.gameState.positionedCharacters.find(o => o.position === index);
+
+  //   return positionedChar;
+  // }
 
   getIndexByChar(char) { // to fix
     return this.getPositionedCharByChar(char).position;
@@ -388,7 +387,6 @@ export default class GameController {
 
   enemyTurn() {
     return new Promise(resolve => {
-      console.log('enemy turn');
       this.doTurn();
       // setTimeout(resolve, 1000);
       this.isEventsBlocked = false;
@@ -399,20 +397,18 @@ export default class GameController {
   doTurn() {
     const opponents = this.getCloseInFightOpponents() || this.getDistanceFightOpponent();
 
-    if (opponents) {
+    if (opponents) { // если в зоне досягаемости есть соперник, то атакуем его
       const { char, target } = opponents;
+
       this.attackHandler(char, target)
         .then(isNextLevel => {
           if (isNextLevel) {
             this.toNextLevel();
-          } else {
-            console.log('user turn', isNextLevel);
-            this.isEventsBlocked = false;
           }
         });
       return;
     }
-    this.compCharMove();
+    this.compCharMove(); // иначе движемся в сторону соперника
   }
 
   getCloseInFightOpponents() {
@@ -425,7 +421,6 @@ export default class GameController {
       }
       const sortedTargets = this.sortCharsBy(targets, 'defence');
       const target = sortedTargets[sortedTargets.length - 1];
-      console.log('Close-In  -  attacking char: ', char, ' target char: ', target);
 
       return { char, target };
     }
@@ -443,7 +438,6 @@ export default class GameController {
       }
       const sortedTargets = this.sortCharsBy(targets, 'defence');
       const target = sortedTargets[sortedTargets.length - 1];
-      console.log('Distant  -  attacking char: ', char, ' target char: ', target);
 
       return { char, target };
     }
@@ -451,7 +445,6 @@ export default class GameController {
   }
 
   compCharMove() {
-    console.log('Moving char: ');
     const char = this.sortCharsBy([...this.compPlayerTeam.characters], 'moveRange')[0];
     const targets = this.getClosestTargetsInArea(char);
     const target = this.sortCharsBy(targets, 'moveRange')[0];

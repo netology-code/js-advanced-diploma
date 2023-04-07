@@ -23,6 +23,8 @@ describe('Swordsman', () => {
       level: 1,
       attack: 40,
       defence: 10,
+      attackRange: 1,
+      moveRange: 4,
     });
   });
 });

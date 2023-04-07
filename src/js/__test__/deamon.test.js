@@ -23,6 +23,8 @@ describe('Daemon', () => {
       level: 1,
       attack: 10,
       defence: 10,
+      attackRange: 4,
+      moveRange: 1,
     });
   });
 });

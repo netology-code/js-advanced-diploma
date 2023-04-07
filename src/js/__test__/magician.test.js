@@ -23,6 +23,8 @@ describe('Magician', () => {
       level: 1,
       attack: 10,
       defence: 40,
+      attackRange: 4,
+      moveRange: 1,
     });
   });
 });
