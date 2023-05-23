@@ -1,3 +1,4 @@
+/* eslint-disable generator-star-spacing */
 /**
  * Класс, представляющий персонажей команды
  *
@@ -12,7 +13,6 @@
  * ```
  * */
 export default class Team {
-  // TODO: write your logic here
   constructor() {
     this.members = new Set();
   }

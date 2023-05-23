@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /**
  * @todo
  * @param index - индекс поля

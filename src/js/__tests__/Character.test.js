@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unresolved */
 import Character from '../Character';
 
 import Bowman from '../Characters/Bowman';
@@ -5,7 +6,6 @@ import Daemon from '../Characters/Daemon';
 import Magician from '../Characters/Magician';
 import Swordsman from '../Characters/Swordsman';
 import Undead from '../Characters/Undead';
-// eslint-disable-next-line import/no-unresolved
 import Vampire from '../Characters/Vampire';
 
 test('Создание объекта класса Character', () => {

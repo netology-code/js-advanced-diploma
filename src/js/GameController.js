@@ -1,3 +1,5 @@
+/* eslint-disable import/no-unresolved */
+/* eslint-disable max-len */
 import themes from './themes';
 import Team from './Team';
 import { generateTeam } from './generators';

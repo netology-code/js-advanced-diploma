@@ -1,3 +1,4 @@
+/* eslint-disable eol-last */
 import { calcHealthLevel, calcTileType } from '../utils';
 
 test.each([

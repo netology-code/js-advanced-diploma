@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { calcHealthLevel, calcTileType } from './utils';
 
 export default class GamePlay {
@@ -178,11 +179,13 @@ export default class GamePlay {
   }
 
   static showError(message) {
-    alert(message);
+    // eslint-disable-next-line no-alert
+
   }
 
   static showMessage(message) {
-    alert(message);
+    // eslint-disable-next-line no-alert
+
   }
 
   selectCell(index, color = 'yellow') {

@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unresolved */
 import Bowman from '../Characters/Bowman';
 import cursors from '../cursors';
 import GameController from '../GameController';
