@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 export default class GameState {
   constructor() {
     this.isUsersTurn = true;
