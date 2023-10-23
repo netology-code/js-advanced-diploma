@@ -1,4 +1,4 @@
-import { calcHealthLevel, calcTileType } from './utils';
+import { calcHealthLevel, calcTileType } from './utils.js';
 
 export default class GamePlay {
   constructor() {
@@ -77,6 +77,11 @@ export default class GamePlay {
       const cellEl = this.boardEl.children[position.position];
       const charEl = document.createElement('div');
       charEl.classList.add('character', position.character.type);
+      charEl.dataset.level = position.character.level;
+      charEl.dataset.attack = position.character.attack;
+      charEl.dataset.defence = position.character.defence;
+      charEl.dataset.health = position.character.health;
+      charEl.dataset.id = position.character.id;
 
       const healthEl = document.createElement('div');
       healthEl.classList.add('health-level');
@@ -198,7 +203,8 @@ export default class GamePlay {
 
   showCellTooltip(message, index) {
     this.cells[index].title = message;
-  }
+  };
+
 
   hideCellTooltip(index) {
     this.cells[index].title = '';
