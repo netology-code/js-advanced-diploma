@@ -1,42 +1,42 @@
-import PositionedCharacter from './PositionedCharacter.js';
-import Character from './Character.js';
+import PositionedCharacter from './PositionedCharacter';
+import Character from './Character';
 
 export default class OwnTeam {
   constructor(positionedCharacterArray) {
     for (let i = 0; i < positionedCharacterArray.length; i += 1) {
-      const character = positionedCharacterArray[i].character;
-      if (character.hasOwnProperty('id')) {
+      const { character } = positionedCharacterArray[i];
+      if (Object.prototype.hasOwnProperty.call(character, 'id')) {
         Object.setPrototypeOf(character, Character.prototype);
       } else {
         character.id = i + 1;
       }
       this[`teamMember${character.id}`] = {
-        character: character,
+        character,
         position: positionedCharacterArray[i].position,
-      }
+      };
     }
   }
 
   getPositionedCharacters() {
     const arrayPositionedCharacters = [];
-    for (let key in this) {
-      arrayPositionedCharacters.push(new PositionedCharacter(this[key].character, this[key].position));
-    }
+    Object.values(this).forEach((value) => {
+      arrayPositionedCharacters.push(new PositionedCharacter(value.character, value.position));
+    });
     return arrayPositionedCharacters;
   }
 
   setNewPosition(charId, newPosition) {
-    for (let key in this) {
+    Object.keys(this).forEach((key) => {
       if (+this[key].character.id === +charId) {
         this[key].position = newPosition;
       }
-    }
+    });
   }
 
   getTarget() {
     return this.getPositionedCharacters().reduce((acc, item) => {
       if (item.character.defence < acc[0]) {
-        return [item.character.health, item.character.id];
+        return [item.character.defence, item.character.id];
       }
       return acc;
     }, [500, {}])[1];
@@ -52,18 +52,18 @@ export default class OwnTeam {
 
   teamLevelUp() {
     const arrayCharacters = [];
-    for (let key in this) {
-      this[key].character.levelUp();
-      arrayCharacters.push(this[key].character);
-    }
+    Object.values(this).forEach((value) => {
+      value.character.levelUp();
+      arrayCharacters.push(value.character);
+    });
     return { characters: arrayCharacters };
   }
 
   getPoints() {
     let sum = 0;
-    for (let key in this) {
-      sum += this[key].character.attack + this[key].character.defence;
-    }
+    Object.values(this).forEach((value) => {
+      sum += value.character.attack + value.character.defence;
+    });
     return sum;
   }
 }

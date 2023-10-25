@@ -1,5 +1,5 @@
-import Team from './Team.js';
-import PositionedCharacter from './PositionedCharacter.js';
+import Team from './Team';
+import PositionedCharacter from './PositionedCharacter';
 
 /**
  * Формирует экземпляр персонажа из массива allowedTypes со
@@ -29,7 +29,8 @@ export function* characterGenerator(types, maxLevel) {
  * @param allowedTypes массив классов
  * @param maxLevel максимальный возможный уровень персонажа
  * @param characterCount количество персонажей, которое нужно сформировать
- * @returns экземпляр Team, хранящий экземпляры персонажей. Количество персонажей в команде - characterCount
+ * @returns экземпляр Team, хранящий экземпляры персонажей.
+ * Количество персонажей в команде - characterCount
  * */
 export function generateTeam(allowedTypes, maxLevel, characterCount) {
   const characters = [];
@@ -42,10 +43,10 @@ export function generateTeam(allowedTypes, maxLevel, characterCount) {
 
 export function playersInit(team, arrayPositions) {
   const positionedCharacterArray = [];
-    team.characters.forEach(el => {
-      const randomIdx = Math.floor(arrayPositions.length * Math.random());
-      positionedCharacterArray.push(new PositionedCharacter(el, arrayPositions[randomIdx]));
-      arrayPositions.splice(randomIdx, 1);
-    });
+  team.characters.forEach((el) => {
+    const randomIdx = Math.floor(arrayPositions.length * Math.random());
+    positionedCharacterArray.push(new PositionedCharacter(el, arrayPositions[randomIdx]));
+    arrayPositions.splice(randomIdx, 1);
+  });
   return positionedCharacterArray;
 }

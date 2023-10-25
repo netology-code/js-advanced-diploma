@@ -1,4 +1,4 @@
-import Character from '../Character.js';
+import Character from '../Character';
 
 export default class Undead extends Character {
   constructor(level) {

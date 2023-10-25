@@ -10,6 +10,8 @@ export default class Indexes {
     }
     this.arrayIndexes = arrayIndexes;
   }
+
+  /* eslint-disable-next-line */
   getIndexes(index) {
     for (let i = 0; i < this.boardSize; i += 1) {
       for (let j = 0; j < this.boardSize; j += 1) {

@@ -1,27 +1,27 @@
-import PositionedCharacter from './PositionedCharacter.js';
-import Character from './Character.js';
+import PositionedCharacter from './PositionedCharacter';
+import Character from './Character';
 
 export default class EnemyTeam {
   constructor(positionedCharacterArray) {
     for (let i = 0; i < positionedCharacterArray.length; i += 1) {
-      const character = positionedCharacterArray[i].character;
-      if (character.hasOwnProperty('id')) {
+      const { character } = positionedCharacterArray[i];
+      if (Object.prototype.hasOwnProperty.call(character, 'id')) {
         Object.setPrototypeOf(character, Character.prototype);
       } else {
         character.id = i + 11;
       }
       this[`teamMember${character.id}`] = {
-        character: character,
+        character,
         position: positionedCharacterArray[i].position,
-      }
+      };
     }
   }
 
   getPositionedCharacters() {
     const arrayPositionedCharacters = [];
-    for (let key in this) {
-      arrayPositionedCharacters.push(new PositionedCharacter(this[key].character, this[key].position));
-    }
+    Object.values(this).forEach((value) => {
+      arrayPositionedCharacters.push(new PositionedCharacter(value.character, value.position));
+    });
     return arrayPositionedCharacters;
   }
 
@@ -34,17 +34,17 @@ export default class EnemyTeam {
   }
 
   setNewPosition(charId, newPosition) {
-    for (let key in this) {
+    Object.keys(this).forEach((key) => {
       if (+this[key].character.id === +charId) {
         this[key].position = newPosition;
       }
-    }
+    });
   }
 
   getAtteckerId() {
-    const daemons = this.getPositionedCharacters().filter(el => el.character.type === 'daemon');
-    const vampires = this.getPositionedCharacters().filter(el => el.character.type === 'vampire');
-    const undeads = this.getPositionedCharacters().filter(el => el.character.type === 'undead');
+    const daemons = this.getPositionedCharacters().filter((el) => el.character.type === 'daemon');
+    const vampires = this.getPositionedCharacters().filter((el) => el.character.type === 'vampire');
+    const undeads = this.getPositionedCharacters().filter((el) => el.character.type === 'undead');
     let characters;
     if (daemons.length === 0 && vampires.length === 0) {
       characters = undeads;

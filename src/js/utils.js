@@ -23,7 +23,7 @@
  * ```
  * */
 export function calcTileType(index, boardSize) {
-  switch(true) {
+  switch (true) {
     case index === 0:
       return 'top-left';
     case index === boardSize - 1:

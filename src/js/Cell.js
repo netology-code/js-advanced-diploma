@@ -1,5 +1,3 @@
-
-
 export default class Cell {
   constructor(cellEl) {
     const charEl = cellEl.querySelector('.character');
@@ -46,4 +44,3 @@ export default class Cell {
     }
   }
 }
-
