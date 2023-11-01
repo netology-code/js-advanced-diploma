@@ -7,7 +7,8 @@
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
     "lint": "eslint ./src",
-    "test": "jest"
+    "test": "jest",
+    "push-dir": "push-dir"
   },
   "author": "",
   "license": "ISC",
@@ -31,6 +32,7 @@
     "webpack-dev-server": "^4.15.1"
   },
   "dependencies": {
-    "core-js": "^3.32.1"
+    "core-js": "^3.32.1",
+    "push-dir": "^0.4.1"
   }
 }
