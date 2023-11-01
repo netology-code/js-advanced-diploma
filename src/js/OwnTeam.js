@@ -42,11 +42,14 @@ export default class OwnTeam {
     }, [500, {}])[1];
   }
 
-  setDamage(charId, attack) {
+  setDamage(charId, attack, callback) {
     const damage = Math.trunc(Math.max(attack - this[`teamMember${charId}`].character.defence, attack * 0.1));
     this[`teamMember${charId}`].character.health -= damage;
     if (this[`teamMember${charId}`].character.health <= 0) {
+      callback(true);
       delete this[`teamMember${charId}`];
+    } else {
+      callback(false);
     }
   }
 
@@ -59,7 +62,7 @@ export default class OwnTeam {
     return { characters: arrayCharacters };
   }
 
-  getPoints() {
+  getScore() {
     let sum = 0;
     Object.values(this).forEach((value) => {
       sum += value.character.attack + value.character.defence;

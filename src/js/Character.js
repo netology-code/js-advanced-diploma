@@ -25,8 +25,18 @@ export default class Character {
   }
 
   levelUp() {
-    this.attack = Math.round(Math.max(this.attack, this.attack * ((60 + this.health) / 100)));
-    this.defence = Math.round(Math.max(this.defence, this.defence * ((60 + this.health) / 100)));
+    let coeff = 40;
+    if (this.level === 1) {
+      coeff = 80;
+    }
+    this.attack = Math.round(Math.max(
+      this.attack * 1.2,
+      this.attack * ((coeff + this.health) / 100),
+    ));
+    this.defence = Math.round(Math.max(
+      this.defence * 1.2,
+      this.defence * ((coeff + this.health) / 100),
+    ));
     this.health = Math.round(Math.min(this.health + 80, 100));
     this.level += 1;
   }

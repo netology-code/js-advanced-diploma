@@ -7,11 +7,13 @@ export default class GamePlay {
     this.boardEl = null;
     this.cells = [];
     this.cellClickListeners = [];
+    this.cellDblClickListeners = [];
     this.cellEnterListeners = [];
     this.cellLeaveListeners = [];
     this.newGameListeners = [];
     this.saveGameListeners = [];
     this.loadGameListeners = [];
+    this.popupClosedListeners = [];
   }
 
   bindToDOM(container) {
@@ -31,12 +33,18 @@ export default class GamePlay {
 
     this.container.innerHTML = `
       <div class="controls">
+        <div id='score' class="controls-info">Score: </div>
+        <div id='max-score' class="controls-info">MaxScore: </div>
         <button data-id="action-restart" class="btn">New Game</button>
         <button data-id="action-save" class="btn">Save Game</button>
         <button data-id="action-load" class="btn">Load Game</button>
+        <div id='round' class="controls-info">Round: </div>
       </div>
       <div class="board-container">
         <div data-id="board" class="board"></div>
+      </div>
+      <div class="controls">
+        <div class="controls-info">Двойной клик ЛКМ - длинная атака</div>
       </div>
     `;
 
@@ -44,9 +52,17 @@ export default class GamePlay {
     this.saveGameEl = this.container.querySelector('[data-id=action-save]');
     this.loadGameEl = this.container.querySelector('[data-id=action-load]');
 
+    this.scoreEl = this.container.querySelector('#score');
+    this.maxScoreEl = this.container.querySelector('#max-score');
+    this.roundEl = this.container.querySelector('#round');
+    this.popupEl = document.querySelector('.popup');
+    this.popupClosedEl = document.querySelector('.popup-closed');
+    this.popupClosedEl.style.cursor = 'pointer';
+
     this.newGameEl.addEventListener('click', (event) => this.onNewGameClick(event));
     this.saveGameEl.addEventListener('click', (event) => this.onSaveGameClick(event));
     this.loadGameEl.addEventListener('click', (event) => this.onLoadGameClick(event));
+    this.popupClosedEl.addEventListener('click', (event) => this.onPopupClosed(event));
 
     this.boardEl = this.container.querySelector('[data-id=board]');
 
@@ -57,6 +73,7 @@ export default class GamePlay {
       cellEl.addEventListener('mouseenter', (event) => this.onCellEnter(event));
       cellEl.addEventListener('mouseleave', (event) => this.onCellLeave(event));
       cellEl.addEventListener('click', (event) => this.onCellClick(event));
+      cellEl.addEventListener('dblclick', (event) => this.onCellDblClick(event));
       this.boardEl.appendChild(cellEl);
     }
 
@@ -124,6 +141,10 @@ export default class GamePlay {
     this.cellClickListeners.push(callback);
   }
 
+  addCellDblClickListener(callback) {
+    this.cellDblClickListeners.push(callback);
+  }
+
   /**
    * Add listener to "New Game" button click
    *
@@ -151,6 +172,10 @@ export default class GamePlay {
     this.loadGameListeners.push(callback);
   }
 
+  addPopupClosedListener(callback) {
+    this.popupClosedListeners.push(callback);
+  }
+
   onCellEnter(event) {
     event.preventDefault();
     const index = this.cells.indexOf(event.currentTarget);
@@ -168,6 +193,11 @@ export default class GamePlay {
     this.cellClickListeners.forEach((o) => o.call(null, index));
   }
 
+  onCellDblClick(event) {
+    const index = this.cells.indexOf(event.currentTarget);
+    this.cellDblClickListeners.forEach((o) => o.call(null, index));
+  }
+
   onNewGameClick(event) {
     event.preventDefault();
     this.newGameListeners.forEach((o) => o.call(null));
@@ -183,14 +213,23 @@ export default class GamePlay {
     this.loadGameListeners.forEach((o) => o.call(null));
   }
 
+  onPopupClosed(event) {
+    event.preventDefault();
+    this.popupClosedListeners.forEach((o) => o.call(null));
+  }
+
   static showError(message) {
-    /* eslint-disable-next-line */
-    alert(message);
+    document.querySelector('.popup-title').textContent = message;
+    document.querySelector('.popup').style.display = '';
   }
 
   static showMessage(message) {
-    /* eslint-disable-next-line */
-    alert(message);
+    document.querySelector('.popup-title').textContent = message;
+    document.querySelector('.popup').style.display = '';
+  }
+
+  hidePopup() {
+    this.popupEl.style.display = 'none';
   }
 
   selectCell(index, color = 'yellow') {

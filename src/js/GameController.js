@@ -14,6 +14,7 @@ import mergeTeams from './mergeTeams';
 import GameState from './GameState';
 import Indexes from './Indexes';
 import themes from './themes';
+import { calcBorderSide } from './utils';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -43,9 +44,12 @@ export default class GameController {
     this.gamePlay.addCellEnterListener((index) => this.onCellEnter(index));
     this.gamePlay.addCellLeaveListener((index) => this.onCellLeave(index));
     this.gamePlay.addCellClickListener((index) => this.onCellClick(index));
+    this.gamePlay.addCellDblClickListener((index) => this.onCellDblClick(index));
     this.gamePlay.addNewGameListener(() => this.startNewGame());
     this.gamePlay.addSaveGameListener(() => this.saveGame());
     this.gamePlay.addLoadGameListener(() => this.loadGame());
+    this.gamePlay.addPopupClosedListener(() => this.onPopupClosed());
+    this.showInfo();
     GameState.activePlayer = 0;
     this.play();
   }
@@ -70,20 +74,21 @@ export default class GameController {
     GameState.enemyTeam = this.enemyTeam.getPositionedCharacters();
     if (!this.enemyTeam.getPositionedCharacters().length) {
       if (GameState.round === 4) {
-        /* eslint-disable-next-line */
-        console.log('вы выиграли игру');
+        GamePlay.showMessage('вы выиграли игру');
+        GameState.setMaxScore();
+        this.showInfo();
         this.blockGame();
       } else {
-        /* eslint-disable-next-line */
-        console.log('вы выиграли раунд');
+        GameState.addPoints(this.ownTeam.getScore());
         this.startNewRound();
       }
     } else if (!this.ownTeam.getPositionedCharacters().length) {
-      /* eslint-disable-next-line */
-      console.log('вы проиграли');
+      GamePlay.showMessage('вы проиграли');
       this.blockGame();
     } else if (GameState.activePlayer === 1) {
       this.reactEnemy();
+    } else if (GameState.activePlayer === 0 && GameState.indexAutoAttack !== null) {
+      this.checkAttack(GameState.indexAutoAttack);
     }
   }
 
@@ -95,25 +100,40 @@ export default class GameController {
     if (cell.role === 'ally') {
       this.gamePlay.selectCell(index);
       this.selectedCellIdx = index;
-    } else if (cell.isEmpty && this.gamePlay.cells[index].classList.contains('selected-green')) {
+    } else if (cell.isEmpty
+      && this.getIndexesMoveAndAttack(this.selectedCellIdx).arrayMoveIndexes.includes(index)) {
       this.move(index);
-    } else if (cell.role === 'enemy' && this.gamePlay.cells[index].classList.contains('selected-red')) {
+    } else if (cell.role === 'enemy'
+      && this.getIndexesMoveAndAttack(this.selectedCellIdx).arrayAttackIndexes.includes(index)) {
       this.attack(index);
     } else {
       GamePlay.showError('Не правильный выбор!');
     }
   }
 
+  onCellDblClick(index) {
+    GameState.indexAutoAttack = index;
+    GameState.indexAutoAttacker = this.selectedCellIdx;
+    this.play();
+  }
+
   onCellEnter(index) {
+    if (GameState.activePlayer === 1) {
+      return;
+    }
     const cell = new Cell(this.gamePlay.cells[index]);
     // если клетка не пустая
     if (!cell.isEmpty) {
       // вывод информации title
       const message = GameController.showInformation(cell.charEl);
       this.gamePlay.showCellTooltip(message, index);
-      // если свой и не selected
-      if (cell.role === 'ally' && !cell.isSelected) {
-        this.gamePlay.setCursor(cursors.pointer);
+      // если свой
+      if (cell.role === 'ally') {
+        this.showAttackAndMovementBoundaries(index);
+        // если не selected
+        if (!cell.isSelected) {
+          this.gamePlay.setCursor(cursors.pointer);
+        }
         // если чужой и персонаж выбран
       } else if (this.selectedCellIdx !== null && cell.role === 'enemy') {
         // если в зоне атаки выбранного персонажа
@@ -142,14 +162,21 @@ export default class GameController {
   }
 
   onCellLeave(index) {
-    if (this.gamePlay.cells[index].querySelector('.character')) {
+    const cell = new Cell(this.gamePlay.cells[index]);
+    if (!cell.isEmpty) {
       this.gamePlay.hideCellTooltip(index);
+      if (cell.role === 'ally') {
+        this.hideAttackAndMovementBoundaries();
+      }
     }
-
     this.gamePlay.setCursor(cursors.auto);
-    if (index !== this.selectedCellIdx) {
+    if (!(cell.isSelected && cell.role === 'ally')) {
       this.gamePlay.deselectCell(index);
     }
+  }
+
+  onPopupClosed() {
+    this.gamePlay.hidePopup();
   }
 
   static showInformation(charEl) {
@@ -216,21 +243,33 @@ export default class GameController {
 
   attack(index) {
     const { attack } = this.gamePlay.cells[this.selectedCellIdx].querySelector('.character').dataset;
+    this.gamePlay.selectCell(this.selectedCellIdx);
+    this.gamePlay.selectCell(index, 'red');
     this.gamePlay.showDamage(index, attack).then(() => {
       if (GameState.activePlayer === 0) {
-        this.enemyTeam.setDamage(this.gamePlay.cells[index].querySelector('.character').dataset.id, attack);
+        this.enemyTeam.setDamage(this.gamePlay.cells[index].querySelector('.character').dataset.id, attack, (damage) => {
+          GameState.addPoints(damage);
+        });
+        this.showInfo();
         this.gamePlay.redrawPositions(mergeTeams(
           this.ownTeam.getPositionedCharacters(),
           this.enemyTeam.getPositionedCharacters(),
         ));
       }
       if (GameState.activePlayer === 1) {
-        this.ownTeam.setDamage(this.gamePlay.cells[index].querySelector('.character').dataset.id, attack);
+        GameState.enemysLastTarget = index;
+        this.ownTeam.setDamage(this.gamePlay.cells[index].querySelector('.character').dataset.id, attack, (request) => {
+          if (request) {
+            GameState.enemysLastTarget = 'killed';
+          }
+        });
         this.gamePlay.redrawPositions(mergeTeams(
           this.ownTeam.getPositionedCharacters(),
           this.enemyTeam.getPositionedCharacters(),
         ));
       }
+      this.gamePlay.deselectCell(this.selectedCellIdx);
+      this.gamePlay.deselectCell(index);
       GameState.activePlayer = GameState.activePlayer === 0 ? 1 : 0;
       this.play();
     });
@@ -299,13 +338,19 @@ export default class GameController {
         }
       }
     }
-    while (!new Cell(this.gamePlay.cells[
-      arrayIndexes[attackerI + verticalDirection * stepAttacker
-      ][
-        attackerJ + horizontalDirection * stepAttacker
-      ]]).isEmpty) {
+    while (!new Cell(this.gamePlay.cells[arrayIndexes[
+      attackerI + verticalDirection * stepAttacker
+    ][
+      attackerJ + horizontalDirection * stepAttacker
+    ]]).isEmpty) {
       if (stepAttacker === 1) {
-        [verticalDirection, horizontalDirection] = directions.next().value;
+        const [newVerticalDirection, newHorizontalDirection] = directions.next().value;
+        const newPlaceI = attackerI + newVerticalDirection * stepAttacker;
+        const newPlaceJ = attackerJ + newHorizontalDirection * stepAttacker;
+        if (newPlaceI >= 0 && newPlaceI < this.gamePlay.boardSize
+          && newPlaceJ >= 0 && newPlaceJ < this.gamePlay.boardSize) {
+          [verticalDirection, horizontalDirection] = [newVerticalDirection, newHorizontalDirection];
+        }
       }
       if (stepAttacker > 1) {
         stepAttacker -= 1;
@@ -357,6 +402,20 @@ export default class GameController {
     };
   }
 
+  checkAttack(enenmyIndex) {
+    const targetCell = new Cell(this.gamePlay.cells[enenmyIndex]);
+    const attackerCell = new Cell(this.gamePlay.cells[this.selectedCellIdx]);
+    if (targetCell.isEmpty || targetCell.role !== 'enemy'
+    || attackerCell.isEmpty || GameState.enemysLastTarget === 'killed') {
+      GameState.indexAutoAttack = null;
+      GameState.indexAutoAttacker = null;
+      GameState.enemysLastTarget = null;
+      return;
+    }
+    this.selectedCellIdx = GameState.indexAutoAttacker;
+    this.attack(enenmyIndex);
+  }
+
   startNewRound() {
     GameState.round += 1;
     this.setTheme();
@@ -365,7 +424,7 @@ export default class GameController {
       [0, 1, 8, 9, 16, 17, 24, 25, 32, 33, 40, 41, 48, 49, 56, 57],
     ));
     this.enemyTeam = new EnemyTeam(playersInit(
-      generateTeam([Daemon, Undead, Vampire], 2, this.countCharacterInTeam),
+      EnemyTeam.teamLevelUp(GameState.round, this.countCharacterInTeam),
       [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55, 62, 63],
     ));
     GameState.ownTeam = this.ownTeam.getPositionedCharacters();
@@ -374,6 +433,7 @@ export default class GameController {
       this.ownTeam.getPositionedCharacters(),
       this.enemyTeam.getPositionedCharacters(),
     ));
+    this.showInfo();
     GameState.activePlayer = 0;
   }
 
@@ -390,9 +450,9 @@ export default class GameController {
   }
 
   startNewGame() {
-    GameState.setMaxPoints(this.ownTeam.getPoints());
     this.gamePlay = new GamePlay();
     this.gamePlay.bindToDOM(document.querySelector('#game-container'));
+    GameState.score = 0;
     this.init();
   }
 
@@ -410,8 +470,40 @@ export default class GameController {
         this.ownTeam.getPositionedCharacters(),
         this.enemyTeam.getPositionedCharacters(),
       ));
+      this.showInfo();
     } catch (error) {
       GamePlay.showError(error.message);
     }
+  }
+
+  showInfo() {
+    this.gamePlay.scoreEl.textContent = `Score: ${GameState.score}`;
+    this.gamePlay.maxScoreEl.textContent = `MaxScore: ${GameState.maxScore}`;
+    this.gamePlay.roundEl.textContent = `Round: ${GameState.round}`;
+  }
+
+  showAttackAndMovementBoundaries(index) {
+    const moveRange = this.getIndexesMoveAndAttack(index).arrayMoveIndexes;
+    const attackRange = this.getIndexesMoveAndAttack(index).arrayAttackIndexes;
+    moveRange.forEach((el) => {
+      this.gamePlay.cells[el].classList.add('move');
+    });
+    attackRange.forEach((el) => {
+      const boardSide = calcBorderSide(el, attackRange, this.gamePlay.boardSize);
+      if (boardSide) {
+        this.gamePlay.cells[el].classList.add('border', `border-${boardSide}`);
+      }
+    });
+  }
+
+  hideAttackAndMovementBoundaries() {
+    this.gamePlay.cells.forEach((element) => {
+      element.classList.remove('move');
+      element.classList.remove('border');
+      const classBorder = [...element.classList].find((classEl) => classEl.startsWith('border-'));
+      if (classBorder) {
+        element.classList.remove(classBorder);
+      }
+    });
   }
 }

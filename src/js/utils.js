@@ -56,3 +56,43 @@ export function calcHealthLevel(health) {
 
   return 'high';
 }
+
+/* eslint-disable-next-line */
+export function calcBorderSide(currIdx, arrayIndexes, boardSize) {
+  const topLeft = Math.min(...arrayIndexes);
+  const bottomRight = Math.max(...arrayIndexes);
+  if (currIdx === topLeft) {
+    return 'top-left';
+  }
+  if (currIdx === bottomRight) {
+    return 'bottom-right';
+  }
+  let currentValue = topLeft + boardSize;
+  while (currentValue < bottomRight - boardSize) {
+    if (currIdx === currentValue) {
+      return 'left';
+    }
+    currentValue += boardSize;
+  }
+  const bottomLeft = currentValue;
+  if (currIdx === bottomLeft) {
+    return 'bottom-left';
+  }
+  currentValue = bottomRight - boardSize;
+  while (currentValue > topLeft + boardSize) {
+    if (currIdx === currentValue) {
+      return 'right';
+    }
+    currentValue -= boardSize;
+  }
+  const topRight = currentValue;
+  if (currIdx === topRight) {
+    return 'top-right';
+  }
+  if (currIdx > topLeft && currIdx < topRight) {
+    return 'top';
+  }
+  if (currIdx > bottomLeft && currIdx < bottomRight) {
+    return 'bottom';
+  }
+}
