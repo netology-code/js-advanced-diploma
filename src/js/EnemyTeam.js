@@ -92,4 +92,8 @@ export default class EnemyTeam {
     });
     return { characters: arrayCharacters };
   }
+
+  hasIndex(index) {
+    return Object.values(this).some((value) => index === value.position);
+  }
 }

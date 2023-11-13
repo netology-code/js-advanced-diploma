@@ -10,11 +10,6 @@ jest.mock('../js/GameStateService', () => function () {
   };
 });
 
-/* eslint-disable-next-line */
-jest.mock('../js/GamePlay', () => function () {
-  return { showError: () => {} };
-});
-
 jest.mock('../js/GameState', () => ({
   state: {},
   from(object) {

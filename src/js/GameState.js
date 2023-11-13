@@ -1,4 +1,29 @@
 export default class GameState {
+  constructor() {
+    this.ownTeam = {};
+    this.enemyTeam = {};
+    this.selectIndex = null;
+  }
+
+
+  getPositionedCharacter(index) {
+    console.log(index);
+    if (this.ownTeam.hasIndex(index)) {
+      console.log(Object.values(this.ownTeam).find((value) => index === value.position));
+      return Object.values(this.ownTeam).find((value) => index === value.position);
+    }
+    if (this.enemyTeam.hasIndex(index)) {
+      console.log(Object.values(this.enemyTeam).find((value) => index === value.position));
+      return Object.values(this.enemyTeam).find((value) => index === value.position);
+    }
+    console.log(null);
+    return null; 
+  }
+
+  getSelectPositionedCharacter() {
+    return this.getPositionedCharacter(this.selectIndex);
+  }
+  
   static activePlayer;
 
   static round;

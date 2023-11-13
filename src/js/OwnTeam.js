@@ -69,4 +69,8 @@ export default class OwnTeam {
     });
     return sum;
   }
+
+  hasIndex(index) {
+    return Object.values(this).some((value) => index === value.position);
+  }
 }

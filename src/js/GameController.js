@@ -20,15 +20,18 @@ export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
-    this.selectedCellIdx = null;
     this.countCharacterInTeam = 4;
-    this.ownTeam = {};
-    this.enemyTeam = {};
+    this.gameState = {};
   }
 
   init() {
+    this.gameState = new GameState();
     GameState.round = 1;
     this.setTheme();
+    const ownTeam = generateTeam([Bowman, Swordsman, Magician], 2, this.countCharacterInTeam);
+    const enemyTeam = generateTeam([Daemon, Undead, Vampire], 2, this.countCharacterInTeam);
+    this.gameState.ownTeam = new OwnTeam(playersInit(ownTeam, [0, 1, 8, 9, 16, 17, 24, 25, 32, 33, 40, 41, 48, 49, 56, 57]));
+    this.gameState.enemyTeam = new EnemyTeam(playersInit(enemyTeam, [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55, 62, 63]));
     this.ownTeam = new OwnTeam(playersInit(
       generateTeam([Bowman, Swordsman, Magician], 2, this.countCharacterInTeam),
       [0, 1, 8, 9, 16, 17, 24, 25, 32, 33, 40, 41, 48, 49, 56, 57],
@@ -37,9 +40,10 @@ export default class GameController {
       generateTeam([Daemon, Undead, Vampire], 2, this.countCharacterInTeam),
       [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55, 62, 63],
     ));
+
     this.gamePlay.redrawPositions(mergeTeams(
-      this.ownTeam.getPositionedCharacters(),
-      this.enemyTeam.getPositionedCharacters(),
+      this.gameState.ownTeam.getPositionedCharacters(),
+      this.gameState.enemyTeam.getPositionedCharacters(),
     ));
     this.gamePlay.addCellEnterListener((index) => this.onCellEnter(index));
     this.gamePlay.addCellLeaveListener((index) => this.onCellLeave(index));
@@ -72,17 +76,17 @@ export default class GameController {
   play() {
     GameState.ownTeam = this.ownTeam.getPositionedCharacters();
     GameState.enemyTeam = this.enemyTeam.getPositionedCharacters();
-    if (!this.enemyTeam.getPositionedCharacters().length) {
+    if (!this.gameState.enemyTeam.getPositionedCharacters().length) {
       if (GameState.round === 4) {
         GamePlay.showMessage('вы выиграли игру');
         GameState.setMaxScore();
         this.showInfo();
         this.blockGame();
       } else {
-        GameState.addPoints(this.ownTeam.getScore());
+        GameState.addPoints(this.gameState.ownTeam.getScore());
         this.startNewRound();
       }
-    } else if (!this.ownTeam.getPositionedCharacters().length) {
+    } else if (!this.gameState.ownTeam.getPositionedCharacters().length) {
       GamePlay.showMessage('вы проиграли');
       this.blockGame();
     } else if (GameState.activePlayer === 1) {
@@ -93,18 +97,18 @@ export default class GameController {
   }
 
   onCellClick(index) {
-    if (this.selectedCellIdx !== null) {
-      this.gamePlay.deselectCell(this.selectedCellIdx);
+    if (this.gameState.selectIndex !== null) {
+      this.gamePlay.deselectCell(this.gameState.selectIndex);
     }
-    const cell = new Cell(this.gamePlay.cells[index]);
-    if (cell.role === 'ally') {
+    //const cell = new Cell(this.gamePlay.cells[index]);
+    if (this.gameState.ownTeam.hasIndex(index)) {
       this.gamePlay.selectCell(index);
-      this.selectedCellIdx = index;
-    } else if (cell.isEmpty
-      && this.getIndexesMoveAndAttack(this.selectedCellIdx).arrayMoveIndexes.includes(index)) {
+      this.gameState.selectIndex = index;
+    } else if (!this.gameState.ownTeam.hasIndex(index) && !this.gameState.enemyTeam.hasIndex(index)
+      && this.getIndexesMoveAndAttack(this.gameState.selectIndex).arrayMoveIndexes.includes(index)) {
       this.move(index);
-    } else if (cell.role === 'enemy'
-      && this.getIndexesMoveAndAttack(this.selectedCellIdx).arrayAttackIndexes.includes(index)) {
+    } else if (this.gameState.enemyTeam.hasIndex(index)
+      && this.getIndexesMoveAndAttack(this.gameState.selectIndex).arrayAttackIndexes.includes(index)) {
       this.attack(index);
     } else {
       GamePlay.showError('Не правильный выбор!');
@@ -121,23 +125,24 @@ export default class GameController {
     if (GameState.activePlayer === 1) {
       return;
     }
-    const cell = new Cell(this.gamePlay.cells[index]);
+    //const cell = new Cell(this.gamePlay.cells[index]);
     // если клетка не пустая
-    if (!cell.isEmpty) {
+    if (this.gameState.ownTeam.hasIndex(index) || this.gameState.enemyTeam.hasIndex(index)) {
       // вывод информации title
-      const message = GameController.showInformation(cell.charEl);
+      const charEl = this.gamePlay.cells[index].querySelector('.character');
+      const message = GameController.showInformation(charEl);
       this.gamePlay.showCellTooltip(message, index);
       // если свой
-      if (cell.role === 'ally') {
+      if (this.gameState.ownTeam.hasIndex(index)) {
         this.showAttackAndMovementBoundaries(index);
         // если не selected
-        if (!cell.isSelected) {
+        if (this.gameState.selectIndex !== index) {
           this.gamePlay.setCursor(cursors.pointer);
         }
         // если чужой и персонаж выбран
-      } else if (this.selectedCellIdx !== null && cell.role === 'enemy') {
+      } else if (this.gameState.selectIndex !== null && this.gameState.enemyTeam.hasIndex(index)) {
         // если в зоне атаки выбранного персонажа
-        if (this.getIndexesMoveAndAttack(this.selectedCellIdx).arrayAttackIndexes.includes(index)) {
+        if (this.getIndexesMoveAndAttack(this.gameState.selectIndex).arrayAttackIndexes.includes(index)) {
           this.gamePlay.setCursor(cursors.crosshair);
           this.gamePlay.selectCell(index, 'red');
         } else {
@@ -148,9 +153,9 @@ export default class GameController {
       }
       // если клетка пустая
       // если персонаж selected
-    } else if (this.selectedCellIdx !== null) {
+    } else if (this.gameState.selectIndex !== null) {
       // если в зоне похода выбранного персонажа
-      if (this.getIndexesMoveAndAttack(this.selectedCellIdx).arrayMoveIndexes.includes(index)) {
+      if (this.getIndexesMoveAndAttack(this.gameState.selectIndex).arrayMoveIndexes.includes(index)) {
         this.gamePlay.setCursor(cursors.pointer);
         this.gamePlay.selectCell(index, 'green');
       } else {
@@ -162,15 +167,15 @@ export default class GameController {
   }
 
   onCellLeave(index) {
-    const cell = new Cell(this.gamePlay.cells[index]);
-    if (!cell.isEmpty) {
+    //const cell = new Cell(this.gamePlay.cells[index]);
+    if (this.gameState.ownTeam.hasIndex(index) || this.gameState.enemyTeam.hasIndex(index)) {
       this.gamePlay.hideCellTooltip(index);
-      if (cell.role === 'ally') {
+      if (this.gameState.ownTeam.hasIndex(index)) {
         this.hideAttackAndMovementBoundaries();
       }
     }
     this.gamePlay.setCursor(cursors.auto);
-    if (!(cell.isSelected && cell.role === 'ally')) {
+    if (!(this.gameState.selectIndex === index && this.gameState.ownTeam.hasIndex(index))) {
       this.gamePlay.deselectCell(index);
     }
   }
@@ -184,13 +189,13 @@ export default class GameController {
   }
 
   move(index) {
-    const charId = this.gamePlay.cells[this.selectedCellIdx].querySelector('.character').dataset.id;
+    const charId = this.gamePlay.cells[this.gameState.selectIndex].querySelector('.character').dataset.id;
     const gameCtrlThis = this;
     /* eslint-disable-next-line */
     const generatorPositions = (function* (idx) {
       const indexes = new Indexes(this.gamePlay.boardSize);
       const { arrayIndexes } = new Indexes(this.gamePlay.boardSize);
-      let [selectedCellI, selectedCellJ] = indexes.getIndexes(this.selectedCellIdx);
+      let [selectedCellI, selectedCellJ] = indexes.getIndexes(this.gameState.selectIndex);
       const [newPlaceI, newPlaceJ] = indexes.getIndexes(idx);
       const verticalIncrease = newPlaceI - selectedCellI;
       const horizontalIncrease = newPlaceJ - selectedCellJ;
@@ -204,12 +209,12 @@ export default class GameController {
           selectedCellJ = newCellJ;
         }
         if (GameState.activePlayer === 0) {
-          this.ownTeam.setNewPosition(charId, arrayIndexes[selectedCellI][selectedCellJ]);
-          yield this.ownTeam.getPositionedCharacters();
+          this.gameState.ownTeam.setNewPosition(charId, arrayIndexes[selectedCellI][selectedCellJ]);
+          yield this.gameState.ownTeam.getPositionedCharacters();
         }
         if (GameState.activePlayer === 1) {
-          this.enemyTeam.setNewPosition(charId, arrayIndexes[selectedCellI][selectedCellJ]);
-          yield this.enemyTeam.getPositionedCharacters();
+          this.gameState.enemyTeam.setNewPosition(charId, arrayIndexes[selectedCellI][selectedCellJ]);
+          yield this.gameState.enemyTeam.getPositionedCharacters();
         }
       }
     }).call(gameCtrlThis, index);
@@ -221,12 +226,12 @@ export default class GameController {
           if (GameState.activePlayer === 0) {
             this.gamePlay.redrawPositions(mergeTeams(
               newArrayPositionTeam.value,
-              this.enemyTeam.getPositionedCharacters(),
+              this.gameState.enemyTeam.getPositionedCharacters(),
             ));
           }
           if (GameState.activePlayer === 1) {
             this.gamePlay.redrawPositions(mergeTeams(
-              this.ownTeam.getPositionedCharacters(),
+              this.gameState.ownTeam.getPositionedCharacters(),
               newArrayPositionTeam.value,
             ));
           }
@@ -242,33 +247,33 @@ export default class GameController {
   }
 
   attack(index) {
-    const { attack } = this.gamePlay.cells[this.selectedCellIdx].querySelector('.character').dataset;
-    this.gamePlay.selectCell(this.selectedCellIdx);
+    const { attack } = this.gamePlay.cells[this.gameState.selectIndex].querySelector('.character').dataset;
+    this.gamePlay.selectCell(this.gameState.selectIndex);
     this.gamePlay.selectCell(index, 'red');
     this.gamePlay.showDamage(index, attack).then(() => {
       if (GameState.activePlayer === 0) {
-        this.enemyTeam.setDamage(this.gamePlay.cells[index].querySelector('.character').dataset.id, attack, (damage) => {
+        this.gameState.enemyTeam.setDamage(this.gamePlay.cells[index].querySelector('.character').dataset.id, attack, (damage) => {
           GameState.addPoints(damage);
         });
         this.showInfo();
         this.gamePlay.redrawPositions(mergeTeams(
-          this.ownTeam.getPositionedCharacters(),
-          this.enemyTeam.getPositionedCharacters(),
+          this.gameState.ownTeam.getPositionedCharacters(),
+          this.gameState.enemyTeam.getPositionedCharacters(),
         ));
       }
       if (GameState.activePlayer === 1) {
         GameState.enemysLastTarget = index;
-        this.ownTeam.setDamage(this.gamePlay.cells[index].querySelector('.character').dataset.id, attack, (request) => {
+        this.gameState.ownTeam.setDamage(this.gamePlay.cells[index].querySelector('.character').dataset.id, attack, (request) => {
           if (request) {
             GameState.enemysLastTarget = 'killed';
           }
         });
         this.gamePlay.redrawPositions(mergeTeams(
-          this.ownTeam.getPositionedCharacters(),
-          this.enemyTeam.getPositionedCharacters(),
+          this.gameState.ownTeam.getPositionedCharacters(),
+          this.gameState.enemyTeam.getPositionedCharacters(),
         ));
       }
-      this.gamePlay.deselectCell(this.selectedCellIdx);
+      this.gamePlay.deselectCell(this.gameState.selectIndex);
       this.gamePlay.deselectCell(index);
       GameState.activePlayer = GameState.activePlayer === 0 ? 1 : 0;
       this.play();
@@ -276,13 +281,13 @@ export default class GameController {
   }
 
   reactEnemy() {
-    const targetId = this.ownTeam.getTarget();
+    const targetId = this.gameState.ownTeam.getTarget();
     const targetEl = this.gamePlay.boardEl.querySelector(`[data-id="${targetId}"]`);
     const targetIdx = this.gamePlay.cells.indexOf(targetEl.closest('.cell'));
-    const attackerId = this.enemyTeam.getAtteckerId();
+    const attackerId = this.gameState.enemyTeam.getAtteckerId();
     const attackerEl = this.gamePlay.boardEl.querySelector(`[data-id="${attackerId}"]`);
     const attackerIdx = this.gamePlay.cells.indexOf(attackerEl.closest('.cell'));
-    this.selectedCellIdx = attackerIdx;
+    this.gameState.selectIndex = attackerIdx;
     if (this.getIndexesMoveAndAttack(attackerIdx).arrayAttackIndexes.includes(targetIdx)) {
       this.attack(targetIdx, attackerEl.attack);
     } else {
@@ -294,12 +299,12 @@ export default class GameController {
     const indexes = new Indexes(this.gamePlay.boardSize);
     const { arrayIndexes } = new Indexes(this.gamePlay.boardSize);
     const [targetI, targetJ] = indexes.getIndexes(targetIndex);
-    const [attackerI, attackerJ] = indexes.getIndexes(this.selectedCellIdx);
-    const cell = new Cell(this.gamePlay.cells[this.selectedCellIdx]);
-    const attackRangeAttacer = cell.charAttackRange;
+    const [attackerI, attackerJ] = indexes.getIndexes(this.gameState.selectIndex);
+    //const cell = new Cell(this.gamePlay.cells[this.selectedCellIdx]);
+    const attackRangeAttacer = this.gameState.getSelectPositionedCharacter().character.charAttackRange;
     let verticalDirection = Math.sign(targetI - attackerI);
     let horizontalDirection = Math.sign(targetJ - attackerJ);
-    const maxStepAttacker = new Cell(this.gamePlay.cells[this.selectedCellIdx]).charHikeRange;
+    const maxStepAttacker = this.gameState.getSelectPositionedCharacter().character.charHikeRange;
     /* eslint-disable-next-line */
     const directions = (function* (vertDirection, horDirection) {
       if (vertDirection && horDirection) {
@@ -338,11 +343,11 @@ export default class GameController {
         }
       }
     }
-    while (!new Cell(this.gamePlay.cells[arrayIndexes[
+    while (this.gameState.getSelectPositionedCharacter([arrayIndexes[
       attackerI + verticalDirection * stepAttacker
     ][
       attackerJ + horizontalDirection * stepAttacker
-    ]]).isEmpty) {
+    ]])) {
       if (stepAttacker === 1) {
         const [newVerticalDirection, newHorizontalDirection] = directions.next().value;
         const newPlaceI = attackerI + newVerticalDirection * stepAttacker;
@@ -368,8 +373,8 @@ export default class GameController {
     const indexes = new Indexes(this.gamePlay.boardSize);
     const arrIdxs = indexes.arrayIndexes;
     const [idxI, idxJ] = indexes.getIndexes(index);
-    const cell = new Cell(this.gamePlay.cells[index]);
-    const countStep = cell.charHikeRange;
+    //const cell = new Cell(this.gamePlay.cells[index]);
+    const countStep = this.gameState.getPositionedCharacter(index).character.charHikeRange;
     const arrMoveIdxs = [];
     for (let i = 1; i <= countStep; i += 1) {
       arrMoveIdxs.push(arrIdxs[idxI][idxJ - i]);
@@ -385,7 +390,7 @@ export default class GameController {
         arrMoveIdxs.push(arrIdxs[idxI + i][idxJ - i]);
       }
     }
-    const attRange = attackRange || cell.charAttackRange;
+    const attRange = attackRange || this.gameState.getPositionedCharacter(index).character.charAttackRange;
     const arrAttIdxs = [];
     const startI = idxI - attRange < 0 ? 0 : idxI - attRange;
     const startJ = idxJ - attRange < 0 ? 0 : idxJ - attRange;
@@ -403,16 +408,16 @@ export default class GameController {
   }
 
   checkAttack(enenmyIndex) {
-    const targetCell = new Cell(this.gamePlay.cells[enenmyIndex]);
-    const attackerCell = new Cell(this.gamePlay.cells[this.selectedCellIdx]);
-    if (targetCell.isEmpty || targetCell.role !== 'enemy'
-    || attackerCell.isEmpty || GameState.enemysLastTarget === 'killed') {
+    const targetCell = this.gameState.getPositionedCharacter(enenmyIndex);
+    const attackerCell = this.gameState.getSelectPositionedCharacter();
+    if (targetCell === null || !this.gameState.enemyTeam.hasIndex(enenmyIndex)
+    || attackerCell === null || GameState.enemysLastTarget === 'killed') {
       GameState.indexAutoAttack = null;
       GameState.indexAutoAttacker = null;
       GameState.enemysLastTarget = null;
       return;
     }
-    this.selectedCellIdx = GameState.indexAutoAttacker;
+    this.gameState.selectIndex = GameState.indexAutoAttacker;
     this.attack(enenmyIndex);
   }
 
