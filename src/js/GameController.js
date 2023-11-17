@@ -14,20 +14,30 @@ import GameState from './GameState';
 import Indexes from './Indexes';
 import themes from './themes';
 import { calcBorderSide } from './utils';
+const GAME_ROUND_MAX = 4;
+const COUNT_CHARACTERS_IN_TEAM = 4;
+const START_LEVEL_MAX = 2;
 
 export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
-    this.countCharacterInTeam = 4;
     this.gameState = {};
   }
 
   init() {
     this.gameState = new GameState();
     this.setTheme();
-    const ownTeam = generateTeam([Bowman, Swordsman, Magician], 2, this.countCharacterInTeam);
-    const enemyTeam = generateTeam([Daemon, Undead, Vampire], 2, this.countCharacterInTeam);
+    const ownTeam = generateTeam(
+      [Bowman, Swordsman, Magician],
+      START_LEVEL_MAX,
+      COUNT_CHARACTERS_IN_TEAM
+      );
+    const enemyTeam = generateTeam(
+      [Daemon, Undead, Vampire],
+      START_LEVEL_MAX,
+      COUNT_CHARACTERS_IN_TEAM
+      );
     this.gameState.ownTeam = new OwnTeam(playersInit(
       ownTeam,
       [0, 1, 8, 9, 16, 17, 24, 25, 32, 33, 40, 41, 48, 49, 56, 57],
@@ -74,7 +84,7 @@ export default class GameController {
     // если вражеская команда пуста
     if (!this.gameState.enemyTeam.getPositionedCharacters().length) {
       // если 4 раунд, то победа в игре
-      if (this.gameState.round === 4) {
+      if (this.gameState.round === GAME_ROUND_MAX) {
         GamePlay.showMessage('вы выиграли игру');
         this.gameState.setMaxScore();
         this.showInfo();
@@ -467,7 +477,7 @@ export default class GameController {
       [0, 1, 8, 9, 16, 17, 24, 25, 32, 33, 40, 41, 48, 49, 56, 57],
     ));
     this.gameState.enemyTeam = new EnemyTeam(playersInit(
-      EnemyTeam.teamLevelUp(this.gameState.round, this.countCharacterInTeam),
+      EnemyTeam.teamLevelUp(this.gameState.round, COUNT_CHARACTERS_IN_TEAM),
       [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55, 62, 63],
     ));
     this.gamePlay.redrawPositions(mergeTeams(
