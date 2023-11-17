@@ -14,6 +14,7 @@ import GameState from './GameState';
 import Indexes from './Indexes';
 import themes from './themes';
 import { calcBorderSide } from './utils';
+
 const GAME_ROUND_MAX = 4;
 const COUNT_CHARACTERS_IN_TEAM = 4;
 const START_LEVEL_MAX = 2;
@@ -31,13 +32,13 @@ export default class GameController {
     const ownTeam = generateTeam(
       [Bowman, Swordsman, Magician],
       START_LEVEL_MAX,
-      COUNT_CHARACTERS_IN_TEAM
-      );
+      COUNT_CHARACTERS_IN_TEAM,
+    );
     const enemyTeam = generateTeam(
       [Daemon, Undead, Vampire],
       START_LEVEL_MAX,
-      COUNT_CHARACTERS_IN_TEAM
-      );
+      COUNT_CHARACTERS_IN_TEAM,
+    );
     this.gameState.ownTeam = new OwnTeam(playersInit(
       ownTeam,
       [0, 1, 8, 9, 16, 17, 24, 25, 32, 33, 40, 41, 48, 49, 56, 57],
