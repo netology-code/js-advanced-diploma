@@ -20,19 +20,22 @@ beforeEach(() => {
   mockShowError.mockClear();
 });
 
-jest.mock('../js/GameState', () => ({
-  state: {},
-  from(object) {
-    this.state = object;
-  },
-}));
+/* eslint-disable-next-line */
+jest.mock('../js/GameState', () => function () {
+  return {
+    response: null,
+    from(object) {
+      this.response = object.response;
+    },
+  };
+});
 
 jest
   .spyOn(GameController.prototype, 'loadGame')
   /* eslint-disable-next-line */
   .mockImplementation(function () {
     try {
-      GameState.from(this.stateService.load());
+      this.gameState.from(this.stateService.load());
     } catch (error) {
       GamePlay.showError(error.message);
     }
@@ -43,6 +46,8 @@ const gamePlay = new GamePlay();
 const stateService = new GameStateService();
 
 const gameCtrl = new GameController(gamePlay, stateService);
+
+gameCtrl.gameState = new GameState();
 
 test('test property load with error', () => {
   gameCtrl.loadGame();

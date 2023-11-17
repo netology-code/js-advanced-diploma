@@ -67,7 +67,7 @@ export default class OwnTeam {
     Object.values(this).forEach((value) => {
       sum += value.character.attack + value.character.defence;
     });
-    return sum;
+    return Math.floor(sum);
   }
 
   hasIndex(index) {

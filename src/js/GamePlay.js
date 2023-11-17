@@ -238,6 +238,9 @@ export default class GamePlay {
   }
 
   deselectCell(index) {
+    if (index === undefined || index === null) {
+      return;
+    }
     const cell = this.cells[index];
     cell.classList.remove(...Array.from(cell.classList)
       .filter((o) => o.startsWith('selected')));

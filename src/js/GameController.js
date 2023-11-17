@@ -7,7 +7,6 @@ import Vampire from './characters/Vampire';
 import GamePlay from './GamePlay';
 import { generateTeam, playersInit } from './generators';
 import cursors from './cursors';
-import Cell from './Cell';
 import OwnTeam from './OwnTeam';
 import EnemyTeam from './EnemyTeam';
 import mergeTeams from './mergeTeams';
@@ -26,21 +25,17 @@ export default class GameController {
 
   init() {
     this.gameState = new GameState();
-    GameState.round = 1;
     this.setTheme();
     const ownTeam = generateTeam([Bowman, Swordsman, Magician], 2, this.countCharacterInTeam);
     const enemyTeam = generateTeam([Daemon, Undead, Vampire], 2, this.countCharacterInTeam);
-    this.gameState.ownTeam = new OwnTeam(playersInit(ownTeam, [0, 1, 8, 9, 16, 17, 24, 25, 32, 33, 40, 41, 48, 49, 56, 57]));
-    this.gameState.enemyTeam = new EnemyTeam(playersInit(enemyTeam, [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55, 62, 63]));
-    this.ownTeam = new OwnTeam(playersInit(
-      generateTeam([Bowman, Swordsman, Magician], 2, this.countCharacterInTeam),
+    this.gameState.ownTeam = new OwnTeam(playersInit(
+      ownTeam,
       [0, 1, 8, 9, 16, 17, 24, 25, 32, 33, 40, 41, 48, 49, 56, 57],
     ));
-    this.enemyTeam = new EnemyTeam(playersInit(
-      generateTeam([Daemon, Undead, Vampire], 2, this.countCharacterInTeam),
+    this.gameState.enemyTeam = new EnemyTeam(playersInit(
+      enemyTeam,
       [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55, 62, 63],
     ));
-
     this.gamePlay.redrawPositions(mergeTeams(
       this.gameState.ownTeam.getPositionedCharacters(),
       this.gameState.enemyTeam.getPositionedCharacters(),
@@ -54,78 +49,103 @@ export default class GameController {
     this.gamePlay.addLoadGameListener(() => this.loadGame());
     this.gamePlay.addPopupClosedListener(() => this.onPopupClosed());
     this.showInfo();
-    GameState.activePlayer = 0;
+    this.gameState.activePlayer = 0;
     this.play();
   }
 
   setTheme() {
-    let { theme } = GameState;
+    let { theme } = this.gameState;
     if (!theme) {
       [theme] = Object.values(themes);
     } else {
-      let indexEstablishedTheme = Object.values(themes).findIndex((el) => el === GameState.theme);
+      let indexEstablishedTheme = Object.values(themes).findIndex(
+        (el) => el === this.gameState.theme,
+      );
       if (indexEstablishedTheme >= Object.values(themes).length - 1) {
         indexEstablishedTheme = -1;
       }
       theme = Object.values(themes)[indexEstablishedTheme + 1];
     }
-    GameState.theme = theme;
+    this.gameState.theme = theme;
     this.gamePlay.drawUi(theme);
   }
 
   play() {
-    GameState.ownTeam = this.ownTeam.getPositionedCharacters();
-    GameState.enemyTeam = this.enemyTeam.getPositionedCharacters();
+    // если вражеская команда пуста
     if (!this.gameState.enemyTeam.getPositionedCharacters().length) {
-      if (GameState.round === 4) {
+      // если 4 раунд, то победа в игре
+      if (this.gameState.round === 4) {
         GamePlay.showMessage('вы выиграли игру');
-        GameState.setMaxScore();
+        this.gameState.setMaxScore();
         this.showInfo();
         this.blockGame();
-      } else {
-        GameState.addPoints(this.gameState.ownTeam.getScore());
-        this.startNewRound();
+        return;
       }
-    } else if (!this.gameState.ownTeam.getPositionedCharacters().length) {
+      // если не 4 раунд, то новый раунд
+      this.gameState.addPoints(this.gameState.ownTeam.getScore());
+      this.startNewRound();
+    }
+    // если команда игрока пуста
+    if (!this.gameState.ownTeam.getPositionedCharacters().length) {
       GamePlay.showMessage('вы проиграли');
       this.blockGame();
-    } else if (GameState.activePlayer === 1) {
+      return;
+    }
+    // реакция бота
+    if (this.gameState.activePlayer === 1) {
       this.reactEnemy();
-    } else if (GameState.activePlayer === 0 && GameState.indexAutoAttack !== null) {
-      this.checkAttack(GameState.indexAutoAttack);
+      return;
+    }
+    // авто атака
+    if (this.gameState.activePlayer === 0 && this.gameState.indexAutoAttack !== null) {
+      this.checkAttack(this.gameState.indexAutoAttack);
     }
   }
 
   onCellClick(index) {
+    if (index === undefined || index === null) {
+      return;
+    }
     if (this.gameState.selectIndex !== null) {
       this.gamePlay.deselectCell(this.gameState.selectIndex);
     }
-    //const cell = new Cell(this.gamePlay.cells[index]);
     if (this.gameState.ownTeam.hasIndex(index)) {
       this.gamePlay.selectCell(index);
       this.gameState.selectIndex = index;
-    } else if (!this.gameState.ownTeam.hasIndex(index) && !this.gameState.enemyTeam.hasIndex(index)
-      && this.getIndexesMoveAndAttack(this.gameState.selectIndex).arrayMoveIndexes.includes(index)) {
-      this.move(index);
-    } else if (this.gameState.enemyTeam.hasIndex(index)
-      && this.getIndexesMoveAndAttack(this.gameState.selectIndex).arrayAttackIndexes.includes(index)) {
-      this.attack(index);
-    } else {
-      GamePlay.showError('Не правильный выбор!');
+      return;
     }
+    if (this.gameState.ownTeam.hasIndex(this.gameState.selectIndex)) {
+      if (!this.gameState.ownTeam.hasIndex(index) && !this.gameState.enemyTeam.hasIndex(index)
+        && this.getIndexesMoveAndAttack(
+          this.gameState.selectIndex,
+        ).arrayMoveIndexes.includes(index)) {
+        this.move(index);
+        return;
+      }
+      if (this.gameState.enemyTeam.hasIndex(index)
+        && this.getIndexesMoveAndAttack(
+          this.gameState.selectIndex,
+        ).arrayAttackIndexes.includes(index)) {
+        this.attack(index);
+        return;
+      }
+    }
+    GamePlay.showError('Не правильный выбор!');
   }
 
   onCellDblClick(index) {
-    GameState.indexAutoAttack = index;
-    GameState.indexAutoAttacker = this.selectedCellIdx;
+    if (index === undefined || index === null) {
+      return;
+    }
+    this.gameState.indexAutoAttack = index;
+    this.gameState.indexAutoAttacker = this.gameState.selectIndex;
     this.play();
   }
 
   onCellEnter(index) {
-    if (GameState.activePlayer === 1) {
+    if (index === undefined || index === null || this.gameState.activePlayer === 1) {
       return;
     }
-    //const cell = new Cell(this.gamePlay.cells[index]);
     // если клетка не пустая
     if (this.gameState.ownTeam.hasIndex(index) || this.gameState.enemyTeam.hasIndex(index)) {
       // вывод информации title
@@ -142,7 +162,9 @@ export default class GameController {
         // если чужой и персонаж выбран
       } else if (this.gameState.selectIndex !== null && this.gameState.enemyTeam.hasIndex(index)) {
         // если в зоне атаки выбранного персонажа
-        if (this.getIndexesMoveAndAttack(this.gameState.selectIndex).arrayAttackIndexes.includes(index)) {
+        if (this.getIndexesMoveAndAttack(
+          this.gameState.selectIndex,
+        ).arrayAttackIndexes.includes(index)) {
           this.gamePlay.setCursor(cursors.crosshair);
           this.gamePlay.selectCell(index, 'red');
         } else {
@@ -155,7 +177,9 @@ export default class GameController {
       // если персонаж selected
     } else if (this.gameState.selectIndex !== null) {
       // если в зоне похода выбранного персонажа
-      if (this.getIndexesMoveAndAttack(this.gameState.selectIndex).arrayMoveIndexes.includes(index)) {
+      if (this.getIndexesMoveAndAttack(
+        this.gameState.selectIndex,
+      ).arrayMoveIndexes.includes(index)) {
         this.gamePlay.setCursor(cursors.pointer);
         this.gamePlay.selectCell(index, 'green');
       } else {
@@ -167,7 +191,9 @@ export default class GameController {
   }
 
   onCellLeave(index) {
-    //const cell = new Cell(this.gamePlay.cells[index]);
+    if (index === undefined || index === null) {
+      return;
+    }
     if (this.gameState.ownTeam.hasIndex(index) || this.gameState.enemyTeam.hasIndex(index)) {
       this.gamePlay.hideCellTooltip(index);
       if (this.gameState.ownTeam.hasIndex(index)) {
@@ -208,12 +234,18 @@ export default class GameController {
           selectedCellI = newCellI;
           selectedCellJ = newCellJ;
         }
-        if (GameState.activePlayer === 0) {
-          this.gameState.ownTeam.setNewPosition(charId, arrayIndexes[selectedCellI][selectedCellJ]);
+        if (this.gameState.activePlayer === 0) {
+          this.gameState.ownTeam.setNewPosition(
+            charId,
+            arrayIndexes[selectedCellI][selectedCellJ],
+          );
           yield this.gameState.ownTeam.getPositionedCharacters();
         }
-        if (GameState.activePlayer === 1) {
-          this.gameState.enemyTeam.setNewPosition(charId, arrayIndexes[selectedCellI][selectedCellJ]);
+        if (this.gameState.activePlayer === 1) {
+          this.gameState.enemyTeam.setNewPosition(
+            charId,
+            arrayIndexes[selectedCellI][selectedCellJ],
+          );
           yield this.gameState.enemyTeam.getPositionedCharacters();
         }
       }
@@ -223,13 +255,13 @@ export default class GameController {
       setTimeout(() => {
         newArrayPositionTeam = generatorPositions.next();
         if (!newArrayPositionTeam.done) {
-          if (GameState.activePlayer === 0) {
+          if (this.gameState.activePlayer === 0) {
             this.gamePlay.redrawPositions(mergeTeams(
               newArrayPositionTeam.value,
               this.gameState.enemyTeam.getPositionedCharacters(),
             ));
           }
-          if (GameState.activePlayer === 1) {
+          if (this.gameState.activePlayer === 1) {
             this.gamePlay.redrawPositions(mergeTeams(
               this.gameState.ownTeam.getPositionedCharacters(),
               newArrayPositionTeam.value,
@@ -237,8 +269,9 @@ export default class GameController {
           }
           drawСall();
         } else {
+          this.gameState.selectIndex = null;
           this.gamePlay.deselectCell(index);
-          GameState.activePlayer = GameState.activePlayer === 0 ? 1 : 0;
+          this.gameState.activePlayer = this.gameState.activePlayer === 0 ? 1 : 0;
           this.play();
         }
       }, 50);
@@ -251,9 +284,9 @@ export default class GameController {
     this.gamePlay.selectCell(this.gameState.selectIndex);
     this.gamePlay.selectCell(index, 'red');
     this.gamePlay.showDamage(index, attack).then(() => {
-      if (GameState.activePlayer === 0) {
+      if (this.gameState.activePlayer === 0) {
         this.gameState.enemyTeam.setDamage(this.gamePlay.cells[index].querySelector('.character').dataset.id, attack, (damage) => {
-          GameState.addPoints(damage);
+          this.gameState.addPoints(damage);
         });
         this.showInfo();
         this.gamePlay.redrawPositions(mergeTeams(
@@ -261,11 +294,11 @@ export default class GameController {
           this.gameState.enemyTeam.getPositionedCharacters(),
         ));
       }
-      if (GameState.activePlayer === 1) {
-        GameState.enemysLastTarget = index;
+      if (this.gameState.activePlayer === 1) {
+        this.gameState.enemysLastTarget = index;
         this.gameState.ownTeam.setDamage(this.gamePlay.cells[index].querySelector('.character').dataset.id, attack, (request) => {
           if (request) {
-            GameState.enemysLastTarget = 'killed';
+            this.gameState.enemysLastTarget = 'killed';
           }
         });
         this.gamePlay.redrawPositions(mergeTeams(
@@ -275,7 +308,8 @@ export default class GameController {
       }
       this.gamePlay.deselectCell(this.gameState.selectIndex);
       this.gamePlay.deselectCell(index);
-      GameState.activePlayer = GameState.activePlayer === 0 ? 1 : 0;
+      this.gameState.selectIndex = null;
+      this.gameState.activePlayer = this.gameState.activePlayer === 0 ? 1 : 0;
       this.play();
     });
   }
@@ -300,8 +334,8 @@ export default class GameController {
     const { arrayIndexes } = new Indexes(this.gamePlay.boardSize);
     const [targetI, targetJ] = indexes.getIndexes(targetIndex);
     const [attackerI, attackerJ] = indexes.getIndexes(this.gameState.selectIndex);
-    //const cell = new Cell(this.gamePlay.cells[this.selectedCellIdx]);
-    const attackRangeAttacer = this.gameState.getSelectPositionedCharacter().character.charAttackRange;
+    const attackRangeAttacer = this.gameState.getSelectPositionedCharacter()
+      .character.charAttackRange;
     let verticalDirection = Math.sign(targetI - attackerI);
     let horizontalDirection = Math.sign(targetJ - attackerJ);
     const maxStepAttacker = this.gameState.getSelectPositionedCharacter().character.charHikeRange;
@@ -343,13 +377,14 @@ export default class GameController {
         }
       }
     }
-    while (this.gameState.getSelectPositionedCharacter([arrayIndexes[
+    while (this.gameState.getPositionedCharacter(arrayIndexes[
       attackerI + verticalDirection * stepAttacker
     ][
       attackerJ + horizontalDirection * stepAttacker
-    ]])) {
+    ])) {
       if (stepAttacker === 1) {
-        const [newVerticalDirection, newHorizontalDirection] = directions.next().value;
+        const array = directions.next().value;
+        const [newVerticalDirection, newHorizontalDirection] = array;
         const newPlaceI = attackerI + newVerticalDirection * stepAttacker;
         const newPlaceJ = attackerJ + newHorizontalDirection * stepAttacker;
         if (newPlaceI >= 0 && newPlaceI < this.gamePlay.boardSize
@@ -369,28 +404,30 @@ export default class GameController {
     this.move(newPlaceIndex);
   }
 
-  getIndexesMoveAndAttack(index, attackRange = NaN) {
+  getIndexesMoveAndAttack(index, attackRange = null) {
     const indexes = new Indexes(this.gamePlay.boardSize);
     const arrIdxs = indexes.arrayIndexes;
     const [idxI, idxJ] = indexes.getIndexes(index);
-    //const cell = new Cell(this.gamePlay.cells[index]);
-    const countStep = this.gameState.getPositionedCharacter(index).character.charHikeRange;
     const arrMoveIdxs = [];
-    for (let i = 1; i <= countStep; i += 1) {
-      arrMoveIdxs.push(arrIdxs[idxI][idxJ - i]);
-      arrMoveIdxs.push(arrIdxs[idxI][idxJ + i]);
-      if (idxI - i >= 0) {
-        arrMoveIdxs.push(arrIdxs[idxI - i][idxJ]);
-        arrMoveIdxs.push(arrIdxs[idxI - i][idxJ - i]);
-        arrMoveIdxs.push(arrIdxs[idxI - i][idxJ + i]);
-      }
-      if (idxI + i < arrIdxs.length) {
-        arrMoveIdxs.push(arrIdxs[idxI + i][idxJ]);
-        arrMoveIdxs.push(arrIdxs[idxI + i][idxJ + i]);
-        arrMoveIdxs.push(arrIdxs[idxI + i][idxJ - i]);
+    if (!attackRange) {
+      const countStep = this.gameState.getPositionedCharacter(index).character.charHikeRange;
+      for (let i = 1; i <= countStep; i += 1) {
+        arrMoveIdxs.push(arrIdxs[idxI][idxJ - i]);
+        arrMoveIdxs.push(arrIdxs[idxI][idxJ + i]);
+        if (idxI - i >= 0) {
+          arrMoveIdxs.push(arrIdxs[idxI - i][idxJ]);
+          arrMoveIdxs.push(arrIdxs[idxI - i][idxJ - i]);
+          arrMoveIdxs.push(arrIdxs[idxI - i][idxJ + i]);
+        }
+        if (idxI + i < arrIdxs.length) {
+          arrMoveIdxs.push(arrIdxs[idxI + i][idxJ]);
+          arrMoveIdxs.push(arrIdxs[idxI + i][idxJ + i]);
+          arrMoveIdxs.push(arrIdxs[idxI + i][idxJ - i]);
+        }
       }
     }
-    const attRange = attackRange || this.gameState.getPositionedCharacter(index).character.charAttackRange;
+    const attRange = attackRange
+    || this.gameState.getPositionedCharacter(index).character.charAttackRange;
     const arrAttIdxs = [];
     const startI = idxI - attRange < 0 ? 0 : idxI - attRange;
     const startJ = idxJ - attRange < 0 ? 0 : idxJ - attRange;
@@ -408,72 +445,85 @@ export default class GameController {
   }
 
   checkAttack(enenmyIndex) {
+    this.gameState.selectIndex = this.gameState.indexAutoAttacker;
     const targetCell = this.gameState.getPositionedCharacter(enenmyIndex);
     const attackerCell = this.gameState.getSelectPositionedCharacter();
     if (targetCell === null || !this.gameState.enemyTeam.hasIndex(enenmyIndex)
-    || attackerCell === null || GameState.enemysLastTarget === 'killed') {
-      GameState.indexAutoAttack = null;
-      GameState.indexAutoAttacker = null;
-      GameState.enemysLastTarget = null;
+      || attackerCell === null || this.gameState.enemysLastTarget === 'killed') {
+      this.gameState.indexAutoAttack = null;
+      this.gameState.indexAutoAttacker = null;
+      this.gameState.enemysLastTarget = null;
+      this.gameState.selectIndex = null;
       return;
     }
-    this.gameState.selectIndex = GameState.indexAutoAttacker;
     this.attack(enenmyIndex);
   }
 
   startNewRound() {
-    GameState.round += 1;
+    this.gameState.round += 1;
     this.setTheme();
-    this.ownTeam = new OwnTeam(playersInit(
-      this.ownTeam.teamLevelUp(),
+    this.gameState.ownTeam = new OwnTeam(playersInit(
+      this.gameState.ownTeam.teamLevelUp(),
       [0, 1, 8, 9, 16, 17, 24, 25, 32, 33, 40, 41, 48, 49, 56, 57],
     ));
-    this.enemyTeam = new EnemyTeam(playersInit(
-      EnemyTeam.teamLevelUp(GameState.round, this.countCharacterInTeam),
+    this.gameState.enemyTeam = new EnemyTeam(playersInit(
+      EnemyTeam.teamLevelUp(this.gameState.round, this.countCharacterInTeam),
       [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55, 62, 63],
     ));
-    GameState.ownTeam = this.ownTeam.getPositionedCharacters();
-    GameState.enemyTeam = this.enemyTeam.getPositionedCharacters();
     this.gamePlay.redrawPositions(mergeTeams(
-      this.ownTeam.getPositionedCharacters(),
-      this.enemyTeam.getPositionedCharacters(),
+      this.gameState.ownTeam.getPositionedCharacters(),
+      this.gameState.enemyTeam.getPositionedCharacters(),
     ));
     this.showInfo();
-    GameState.activePlayer = 0;
+    this.gameState.activePlayer = 0;
   }
 
   blockGame() {
-    this.gamePlay.addCellEnterListener(() => {
-      this.gamePlay.cellEnterListeners = [];
-    });
-    this.gamePlay.addCellLeaveListener(() => {
-      this.gamePlay.cellLeaveListeners = [];
-    });
-    this.gamePlay.addCellClickListener(() => {
-      this.gamePlay.cellClickListeners = [];
-    });
+    this.gamePlay.cellEnterListeners = [];
+    this.gamePlay.cellLeaveListeners = [];
+    this.gamePlay.cellClickListeners = [];
+    this.gamePlay.addCellDblClickListener(() => { });
+    this.gameState.gameBlocking = true;
+  }
+
+  unBlockGame() {
+    if (this.gamePlay.cellEnterListeners.length === 0) {
+      this.gamePlay.addCellEnterListener((index) => this.onCellEnter(index));
+    }
+    if (this.gamePlay.cellLeaveListeners.length === 0) {
+      this.gamePlay.addCellLeaveListener((index) => this.onCellLeave(index));
+    }
+    if (this.gamePlay.cellClickListeners.length === 0) {
+      this.gamePlay.addCellClickListener((index) => this.onCellClick(index));
+    }
+    this.gamePlay.addCellDblClickListener((index) => this.onCellDblClick(index));
+    this.gameState.gameBlocking = false;
   }
 
   startNewGame() {
     this.gamePlay = new GamePlay();
     this.gamePlay.bindToDOM(document.querySelector('#game-container'));
-    GameState.score = 0;
     this.init();
   }
 
   saveGame() {
-    this.stateService.save(GameState.getData());
+    if (this.gameState.gameBlocking) {
+      GamePlay.showMessage('сейчас невозможно сохранить игру');
+      return;
+    }
+    this.stateService.save(this.gameState.getData());
   }
 
   loadGame() {
     try {
-      GameState.from(this.stateService.load());
-      this.ownTeam = new OwnTeam(GameState.ownTeam);
-      this.enemyTeam = new EnemyTeam(GameState.enemyTeam);
-      this.gamePlay.drawUi(GameState.theme);
+      if (this.gameState.gameBlocking) {
+        this.unBlockGame();
+      }
+      this.gameState.from(this.stateService.load());
+      this.gamePlay.drawUi(this.gameState.theme);
       this.gamePlay.redrawPositions(mergeTeams(
-        this.ownTeam.getPositionedCharacters(),
-        this.enemyTeam.getPositionedCharacters(),
+        this.gameState.ownTeam.getPositionedCharacters(),
+        this.gameState.enemyTeam.getPositionedCharacters(),
       ));
       this.showInfo();
     } catch (error) {
@@ -482,9 +532,9 @@ export default class GameController {
   }
 
   showInfo() {
-    this.gamePlay.scoreEl.textContent = `Score: ${GameState.score}`;
+    this.gamePlay.scoreEl.textContent = `Score: ${this.gameState.score}`;
     this.gamePlay.maxScoreEl.textContent = `MaxScore: ${GameState.maxScore}`;
-    this.gamePlay.roundEl.textContent = `Round: ${GameState.round}`;
+    this.gamePlay.roundEl.textContent = `Round: ${this.gameState.round}`;
   }
 
   showAttackAndMovementBoundaries(index) {
