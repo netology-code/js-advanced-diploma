@@ -19,6 +19,9 @@ export default class Character {
     this.defence = 0;
     this.health = 50;
     this.type = type;
+    if (new.target == Character) {
+      throw new Error('Объект класса Character не может создаваться конструкцией new');
+    }
     // TODO: выбросите исключение, если кто-то использует "new Character()"
   }
 }

@@ -6,6 +6,7 @@ module.exports = {
   entry: './src/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
+    assetModuleFilename: 'img/[hash][ext][query]'
   },
   module: {
     rules: [
